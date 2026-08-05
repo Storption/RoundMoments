@@ -1,6 +1,7 @@
 ﻿namespace RoundMoments.Modules
 {
     using System.Collections.Generic;
+    using Exiled.API.Extensions;
     using Exiled.API.Features;
     using Exiled.Events.EventArgs.Player;
 
@@ -54,8 +55,13 @@
             if (Config.FirstBloodEnabled && !firstBloodHappened)
             {
                 firstBloodHappened = true;
-                string message = string.Format(Translation.FirstBloodBroadcast, killer.Nickname);
+                string roleColorHex = killer.Role.Type.GetColor().ToHex();
+                string coloredName = $"<color=#{roleColorHex}>{killer.Nickname}</color>";
+                string message = string.Format(Translation.FirstBloodBroadcast, coloredName);
                 Map.Broadcast((ushort)Config.FirstBloodBroadcastDuration, message);
+
+                if (Config.Debug)
+                    Log.Debug($"First blood: {killer.Nickname} killed {victim.Nickname}.");
             }
 
             if (Config.KillStreakEnabled)
@@ -65,7 +71,12 @@
                 KillStreaks[killer] = currentStreak;
 
                 if (currentStreak >= Config.KillStreakThreshold)
+                {
                     ShowPositionedHint(killer, string.Format(Translation.KillStreakHint, currentStreak));
+
+                    if (Config.Debug)
+                        Log.Debug($"{killer.Nickname} reached a {currentStreak}-kill streak.");
+                }
             }
 
             DeathStreaks[killer] = 0;
@@ -77,11 +88,21 @@
                 DeathStreaks[victim] = currentDeathStreak;
 
                 if (currentDeathStreak >= Config.DeathStreakThreshold)
+                {
                     ShowPositionedHint(victim, string.Format(Translation.DeathStreakHint, currentDeathStreak));
+
+                    if (Config.Debug)
+                        Log.Debug($"{victim.Nickname} reached a {currentDeathStreak}-death streak.");
+                }
             }
 
             if (Config.RevengeKillEnabled && LastKilledBy.TryGetValue(killer, out Player? killersLastKiller) && killersLastKiller == victim)
+            {
                 ShowPositionedHint(killer, string.Format(Translation.RevengeKillHint, victim.Nickname));
+
+                if (Config.Debug)
+                    Log.Debug($"{killer.Nickname} got a revenge kill on {victim.Nickname}.");
+            }
 
             LastKilledBy[victim] = killer;
 
@@ -89,7 +110,12 @@
             {
                 double killerHealthPercent = killer.Health / killer.MaxHealth * 100.0;
                 if (killerHealthPercent <= Config.ComebackHealthThreshold)
+                {
                     ShowPositionedHint(killer, string.Format(Translation.ComebackHint, (int)killer.Health));
+
+                    if (Config.Debug)
+                        Log.Debug($"{killer.Nickname} got a comeback kill at {killer.Health} HP ({killerHealthPercent:F1}%).");
+                }
             }
         }
 

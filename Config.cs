@@ -89,12 +89,6 @@
         public bool TeamWipeEnabled { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets how long, in seconds, the team wipe broadcast stays visible.
-        /// </summary>
-        [Description("How long, in seconds, the team wipe broadcast stays visible.")]
-        public int TeamWipeBroadcastDuration { get; set; } = 5;
-
-        /// <summary>
         /// Gets or sets how long, in seconds, the round-end summary broadcast stays visible.
         /// </summary>
         [Description("How long, in seconds, the round-end summary broadcast stays visible.")]

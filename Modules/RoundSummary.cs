@@ -126,6 +126,9 @@
 
             if (!string.IsNullOrEmpty(text))
                 Map.Broadcast((ushort)Config.RoundSummaryDuration, text);
+
+            if (Config.Debug)
+                Log.Debug($"Round summary: survivor={bestSurvivor?.Nickname ?? "none"} ({bestSurvivalTime.Minutes}m {bestSurvivalTime.Seconds}s), nemesis pair kills={topPair.Value}, top damage-no-kill={topDamageNoKill.Value}.");
         }
     }
 }

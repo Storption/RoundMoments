@@ -39,12 +39,6 @@
         public string ComebackHint { get; set; } = "Incredible! You got a kill at only {0} HP.";
 
         /// <summary>
-        /// Gets or sets the broadcast shown to everyone when a team is wiped out.
-        /// </summary>
-        [Description("The broadcast shown to everyone when a team is completely wiped out. {0} is the team name.")]
-        public string TeamWipeBroadcast { get; set; } = "{0} has been completely wiped out!";
-
-        /// <summary>
         /// Gets or sets the line in the round-end summary reporting who survived the longest.
         /// </summary>
         [Description("The line in the round-end summary reporting who survived the longest. {0} is the player's name, {1} is minutes, {2} is seconds.")]

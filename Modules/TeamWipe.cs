@@ -11,7 +11,6 @@
     public static class TeamWipe
     {
         private static Config Config => Plugin.Instance!.Config;
-        private static Translation Translation => Plugin.Instance!.Translation;
 
         public static void RegisterEvents()
         {
@@ -31,25 +30,27 @@
             if (ev.Player.Role.Team == Team.Dead)
                 return;
 
+            if (ev.Player.Role.Team == Team.Scientists)
+                return;
+
             if (Player.List.Count(p => p.Role.Team == ev.Player.Role.Team) > 1)
                 return;
 
-            string message = string.Format(Translation.TeamWipeBroadcast, ev.Player.Role.Team);
-
-            string? cassieText = ev.Player.Role.Team switch
+            (string Cassie, string Subtitle)? cassieAnnouncement = ev.Player.Role.Team switch
             {
-                Team.SCPs => "ALL SCPSUBJECTS HAVE BEEN SECURED .",
-                Team.ClassD => "ALL CLASS D PERSONNEL HAVE BEEN SECURED .",
-                Team.ChaosInsurgency => "ALL CHAOSINSURGENCY PERSONNEL TERMINATED .",
-                Team.FoundationForces => "ALL FOUNDATION PERSONNEL TERMINATED .",
+                Team.SCPs => ("ALL SCPSUBJECTS HAVE BEEN SECURED .", "All SCP subjects have been secured."),
+                Team.ClassD => ("ALL CLASS D PERSONNEL HAVE BEEN SECURED .", "All Class D personnel have been secured."),
+                Team.ChaosInsurgency => ("ALL CHAOSINSURGENCY PERSONNEL TERMINATED .", "All Chaos Insurgency personnel terminated."),
+                Team.FoundationForces => ("ALL FOUNDATION PERSONNEL TERMINATED .", "All Foundation personnel terminated."),
 
                 _ => null,
             };
 
-            if (cassieText is not null)
-                Cassie.MessageTranslated(cassieText, message);
+            if (cassieAnnouncement is not null)
+                Cassie.MessageTranslated(cassieAnnouncement.Value.Cassie, cassieAnnouncement.Value.Subtitle);
 
-            Map.Broadcast((ushort)Config.TeamWipeBroadcastDuration, message);
+            if (Config.Debug)
+                Log.Debug($"Team wipe detected for {ev.Player.Role.Team}. Cassie phrase: {cassieAnnouncement?.Cassie ?? "none"}.");
         }
     }
 }
