@@ -22,7 +22,7 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 ## Installation
 
 1. Download the latest `RoundMoments.dll` from the [Releases](https://github.com/Storption/RoundMoments/releases) page.
-2. Place it in your server's EXILED plugins folder (`%AppData%\EXILED\Plugins` on Windows).
+2. Place it in your server's EXILED plugins folder (`%AppData%\EXILED\Plugins` on Windows `.config\EXILED\Plugins` on Linux).
 3. Restart your server. A default config will be generated on first load.
 
 ## Config
@@ -63,3 +63,6 @@ round_summary_duration: 10
 ```
 
 All hint and broadcast text is configurable via the generated translation file, including every message's exact wording.
+
+## Support
+Can join my [Discord](https://join.storption.com)
