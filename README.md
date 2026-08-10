@@ -4,6 +4,7 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 
 [![Downloads](https://img.shields.io/github/downloads/Storption/RoundMoments/total?style=for-the-badge&logo=github&color=blue)](https://github.com/Storption/RoundMoments/releases/latest)
 [![Latest](https://img.shields.io/github/v/release/Storption/RoundMoments?include_prereleases&style=for-the-badge&logo=github&label=Latest%20Release&color=green)](https://github.com/Storption/RoundMoments/releases/latest)
+[![Discord](https://img.shields.io/discord/1114170053949128817?style=for-the-badge&color=5865F2&logo=discord&label=Discord&logoColor=white)](https://join.storption.com)
 
 ## How it works
 
@@ -63,6 +64,3 @@ round_summary_duration: 10
 ```
 
 All hint and broadcast text is configurable via the generated translation file, including every message's exact wording.
-
-## Support
-Can join my [Discord](https://join.storption.com)
