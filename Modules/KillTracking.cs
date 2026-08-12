@@ -56,7 +56,7 @@
             {
                 firstBloodHappened = true;
                 string roleColorHex = killer.Role.Type.GetColor().ToHex();
-                string coloredName = $"<color=#{roleColorHex}>{killer.Nickname}</color>";
+                string coloredName = $"<color={roleColorHex}>{killer.Nickname}</color>";
                 string message = string.Format(Translation.FirstBloodBroadcast, coloredName);
                 Map.Broadcast((ushort)Config.FirstBloodBroadcastDuration, message);
 
