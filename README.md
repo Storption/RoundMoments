@@ -13,8 +13,10 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 - **First blood** - a broadcast to everyone the moment the round's first kill happens.
 - **Revenge kills** - a hint when a player kills the specific person who killed them last.
 - **Comeback/underdog kills** - a hint when a player gets a kill while at critically low health.
-- **Team wipes** - a CASSIE announcement plus broadcast when an entire team (SCPs, Class-D, Chaos Insurgency, or Foundation Forces) is fully eliminated.
-- **Round-end summary** - a single broadcast covering the round's longest survivor, the biggest "nemesis" pairing (whoever killed each other the most), and whoever dealt the most damage without ever landing a kill.
+- **Team wipes** - a CASSIE announcement, alarm and all, when an entire team (SCPs, Class-D, Chaos Insurgency, or Foundation Forces) is fully eliminated by death - an escaping player recruited into another team doesn't count as a wipe.
+- **Round-end summary** - a single broadcast covering the round's first blood, the first team wiped out, the longest survivor, the biggest "nemesis" pairing (whoever killed each other the most), and whoever dealt the most damage without ever landing a kill.
+- **Colored names** - every player name shown by this plugin uses their badge color when they have one, falling back to their role's color otherwise.
+- **Auto-update** - checks this plugin's own GitHub repo for a newer release, and if found, downloads and applies it automatically, restarting the server once the current round ends.
 
 ## Requirements
 
@@ -40,7 +42,7 @@ death_streak_threshold: 3
 # How long, in seconds, hints shown to individual players stay visible.
 hint_duration: 5
 # How many blank lines to pad hints with, controlling their vertical position on screen. More lines pushes the hint higher up.
-hint_line_padding: 10
+hint_line_padding: 15
 # Whether the kill streak feature is enabled.
 kill_streak_enabled: true
 # Whether the death streak feature is enabled.
@@ -57,10 +59,16 @@ comeback_enabled: true
 comeback_health_threshold: 20
 # Whether the team wipe announcement is enabled.
 team_wipe_enabled: true
-# How long, in seconds, the team wipe broadcast stays visible.
-team_wipe_broadcast_duration: 5
 # How long, in seconds, the round-end summary broadcast stays visible.
 round_summary_duration: 10
+# The round-end summary broadcast's text size, as a percentage of the default size.
+round_summary_text_size_percent: 50
+# Whether to check for and automatically install updates.
+auto_update_enabled: true
+# Whether to keep a backup of the previous .dll before replacing it with an update.
+auto_update_backup: true
+# Whether to automatically restart the server once the current round ends, to apply a downloaded update. Never restarts mid-round.
+auto_update_restart: true
 ```
 
 All hint and broadcast text is configurable via the generated translation file, including every message's exact wording.

@@ -1,7 +1,6 @@
 ﻿namespace RoundMoments.Modules
 {
     using System.Collections.Generic;
-    using Exiled.API.Extensions;
     using Exiled.API.Features;
     using Exiled.Events.EventArgs.Player;
 
@@ -10,9 +9,9 @@
     /// </summary>
     public static class KillTracking
     {
-        private static readonly Dictionary<Player, int> KillStreaks = new();
-        private static readonly Dictionary<Player, int> DeathStreaks = new();
-        private static readonly Dictionary<Player, Player> LastKilledBy = new();
+        private static readonly Dictionary<int, int> KillStreaks = new();
+        private static readonly Dictionary<int, int> DeathStreaks = new();
+        private static readonly Dictionary<int, int> LastKilledBy = new();
         private static bool firstBloodHappened;
 
         private static Config Config => Plugin.Instance!.Config;
@@ -43,20 +42,22 @@
             if (ev.Player is null)
                 return;
 
-            if (KillStreaks.ContainsKey(ev.Player))
-                KillStreaks[ev.Player] = 0;
+            int victimId = ev.Player.Id;
+
+            if (KillStreaks.ContainsKey(victimId))
+                KillStreaks[victimId] = 0;
 
             if (ev.Attacker is null || ev.Attacker == ev.Player)
                 return;
 
             Player killer = ev.Attacker;
             Player victim = ev.Player;
+            int killerId = killer.Id;
 
             if (Config.FirstBloodEnabled && !firstBloodHappened)
             {
                 firstBloodHappened = true;
-                string roleColorHex = killer.Role.Type.GetColor().ToHex();
-                string coloredName = $"<color={roleColorHex}>{killer.Nickname}</color>";
+                string coloredName = PlayerColor.GetColoredName(killer);
                 string message = string.Format(Translation.FirstBloodBroadcast, coloredName);
                 Map.Broadcast((ushort)Config.FirstBloodBroadcastDuration, message);
 
@@ -66,9 +67,12 @@
 
             if (Config.KillStreakEnabled)
             {
-                KillStreaks.TryGetValue(killer, out int currentStreak);
+                KillStreaks.TryGetValue(killerId, out int currentStreak);
                 currentStreak++;
-                KillStreaks[killer] = currentStreak;
+                KillStreaks[killerId] = currentStreak;
+
+                if (Config.Debug)
+                    Log.Debug($"{killer.Nickname} (id={killerId}) kill streak now {currentStreak} (victim={victim.Nickname}, id={victimId}).");
 
                 if (currentStreak >= Config.KillStreakThreshold)
                 {
@@ -79,13 +83,13 @@
                 }
             }
 
-            DeathStreaks[killer] = 0;
+            DeathStreaks[killerId] = 0;
 
             if (Config.DeathStreakEnabled)
             {
-                DeathStreaks.TryGetValue(victim, out int currentDeathStreak);
+                DeathStreaks.TryGetValue(victimId, out int currentDeathStreak);
                 currentDeathStreak++;
-                DeathStreaks[victim] = currentDeathStreak;
+                DeathStreaks[victimId] = currentDeathStreak;
 
                 if (currentDeathStreak >= Config.DeathStreakThreshold)
                 {
@@ -96,15 +100,15 @@
                 }
             }
 
-            if (Config.RevengeKillEnabled && LastKilledBy.TryGetValue(killer, out Player? killersLastKiller) && killersLastKiller == victim)
+            if (Config.RevengeKillEnabled && LastKilledBy.TryGetValue(killerId, out int killersLastKillerId) && killersLastKillerId == victimId)
             {
-                ShowPositionedHint(killer, string.Format(Translation.RevengeKillHint, victim.Nickname));
+                ShowPositionedHint(killer, string.Format(Translation.RevengeKillHint, PlayerColor.GetColoredName(victim)));
 
                 if (Config.Debug)
                     Log.Debug($"{killer.Nickname} got a revenge kill on {victim.Nickname}.");
             }
 
-            LastKilledBy[victim] = killer;
+            LastKilledBy[victimId] = killerId;
 
             if (Config.ComebackEnabled)
             {
@@ -121,7 +125,7 @@
 
         private static void ShowPositionedHint(Player player, string message)
         {
-            string padding = new string('\n', Config.HintLinePadding);
+            string padding = new('\n', Config.HintLinePadding);
             player.ShowHint($"{padding}{message}", Config.HintDuration);
         }
     }

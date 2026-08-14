@@ -10,6 +10,7 @@
 	
   <ItemGroup>
 	  <PackageReference Include="ExMod.Exiled" Version="9.14.2" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 	
   <ItemGroup>
@@ -19,6 +20,7 @@
     <Reference Include="UnityEngine.CoreModule" HintPath="$(MANAGED)\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="UnityEngine.PhysicsModule" HintPath="$(MANAGED)\UnityEngine.PhysicsModule.dll" Private="false" />
     <Reference Include="Pooling" HintPath="$(MANAGED)\Pooling.dll" Private="false" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
 </Project>

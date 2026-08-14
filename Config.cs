@@ -38,7 +38,7 @@
         /// Gets or sets how many blank lines to pad hints with, controlling their vertical position on screen. More lines pushes the hint higher up.
         /// </summary>
         [Description("How many blank lines to pad hints with, controlling their vertical position on screen. More lines pushes the hint higher up.")]
-        public int HintLinePadding { get; set; } = 10;
+        public int HintLinePadding { get; set; } = 15;
 
         /// <summary>
         /// Gets or sets whether the kill streak feature is enabled.
@@ -93,5 +93,29 @@
         /// </summary>
         [Description("How long, in seconds, the round-end summary broadcast stays visible.")]
         public int RoundSummaryDuration { get; set; } = 10;
+
+        /// <summary>
+        /// Gets or sets the round-end summary broadcasts text size, as a percentage of the default size.
+        /// </summary>
+        [Description("The round-end summary broadcasts text size, as a percentage of the default size.")]
+        public int RoundSummaryTextSizePercent { get; set; } = 80;
+
+        /// <summary>
+        /// Gets or sets whether to check for and automatically install updates.
+        /// </summary>
+        [Description("Whether to check for and automatically install updates.")]
+        public bool AutoUpdateEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether to keep a backup of the previous .dll before replacing it with an update.
+        /// </summary>
+        [Description("Whether to keep a backup of the previous .dll before replacing it with an update.")]
+        public bool AutoUpdateBackup { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether to automatically restart the server once the current round ends, to apply a downloaded update.
+        /// </summary>
+        [Description("Whether to automatically restart the server once the current round ends, to apply a downloaded update. Never restarts mid-round.")]
+        public bool AutoUpdateRestart { get; set; } = true;
     }
 }

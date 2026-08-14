@@ -26,7 +26,7 @@
         public override Version RequiredExiledVersion { get; } = new Version(9, 14, 2);
 
         /// <inheritdoc/>
-        public override Version Version { get; } = new Version(1, 1, 0);
+        public override Version Version { get; } = new Version(1, 2, 0);
 
         /// <inheritdoc/>
         public override void OnEnabled()
@@ -36,6 +36,7 @@
             Modules.TeamWipe.RegisterEvents();
             Modules.KillTracking.RegisterEvents();
             Modules.RoundSummary.RegisterEvents();
+            Modules.AutoUpdate.RegisterEvents();
 
             base.OnEnabled();
         }
@@ -46,6 +47,7 @@
             Modules.TeamWipe.UnregisterEvents();
             Modules.KillTracking.UnregisterEvents();
             Modules.RoundSummary.UnregisterEvents();
+            Modules.AutoUpdate.UnregisterEvents();
 
             Instance = null;
 
