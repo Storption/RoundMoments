@@ -43,6 +43,11 @@
             if (!Config.TeamWipeEnabled)
                 return;
 
+            if (!ev.IsAllowed)
+                return;
+
+            bool debug = Config.Debug;
+
             if (ev.Player.Role.Team == Team.Dead)
                 return;
 
@@ -82,7 +87,7 @@
             Cassie.MessageTranslated(cassieAnnouncement.Value.Cassie, cassieAnnouncement.Value.Subtitle, true);
             firstWipeTeam ??= wipedTeam;
 
-            if (Config.Debug)
+            if (debug)
                 Log.Debug($"Team wipe detected for {wipedTeam}. Cassie phrase: {cassieAnnouncement.Value.Cassie}.");
         }
     }

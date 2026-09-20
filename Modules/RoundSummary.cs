@@ -29,6 +29,7 @@
         public static void RegisterEvents()
         {
             Exiled.Events.Handlers.Player.Spawned += OnSpawned;
+            Exiled.Events.Handlers.Player.Left += OnLeft;
             Exiled.Events.Handlers.Player.Died += OnPlayerDied;
             Exiled.Events.Handlers.Player.Hurting += OnPlayerHurting;
             Exiled.Events.Handlers.Server.RoundEnded += OnRoundEnded;
@@ -38,6 +39,7 @@
         public static void UnregisterEvents()
         {
             Exiled.Events.Handlers.Player.Spawned -= OnSpawned;
+            Exiled.Events.Handlers.Player.Left -= OnLeft;
             Exiled.Events.Handlers.Player.Died -= OnPlayerDied;
             Exiled.Events.Handlers.Player.Hurting -= OnPlayerHurting;
             Exiled.Events.Handlers.Server.RoundEnded -= OnRoundEnded;
@@ -57,12 +59,24 @@
 
         private static void OnSpawned(SpawnedEventArgs ev)
         {
-            LifeStartTimes[ev.Player.Id] = DateTime.Now;
+            if (ev.Player.Role.Team == Team.Dead)
+                return;
+
+            if (!LifeStartTimes.ContainsKey(ev.Player.Id))
+                LifeStartTimes[ev.Player.Id] = DateTime.Now;
+        }
+
+        private static void OnLeft(LeftEventArgs ev)
+        {
+            LifeStartTimes.Remove(ev.Player.Id);
         }
 
         private static void OnPlayerHurting(HurtingEventArgs ev)
         {
-            if (ev.Attacker is null || ev.Player is null || ev.Attacker == ev.Player)
+            if (!ev.IsAllowed || ev.Attacker is null || ev.Player is null || ev.Attacker == ev.Player)
+                return;
+
+            if (!HitboxIdentity.IsEnemy(ev.Attacker.Role.Type, ev.Player.Role.Type))
                 return;
 
             int attackerId = ev.Attacker.Id;
@@ -80,14 +94,22 @@
             if (LifeStartTimes.TryGetValue(victimId, out DateTime lifestart))
             {
                 TimeSpan survived = DateTime.Now - lifestart;
+                LifeStartTimes.Remove(victimId);
+
                 if (survived > bestSurvivalTime)
                 {
                     bestSurvivalTime = survived;
                     bestSurvivorId = victimId;
                 }
+
+                if (Config.Debug)
+                    Log.Debug($"{ev.Player.Nickname} (id={victimId}) died after surviving {survived.Minutes}m {survived.Seconds}s.");
             }
 
             if (ev.Attacker is null || ev.Attacker == ev.Player)
+                return;
+
+            if (!HitboxIdentity.IsEnemy(ev.Attacker.Role.Type, ev.TargetOldRole))
                 return;
 
             int killerId = ev.Attacker.Id;
@@ -132,7 +154,7 @@
                 text += string.Format(Translation.LongestSurvivalLine, PlayerColor.GetColoredName(bestSurvivor), bestSurvivalTime.Minutes, bestSurvivalTime.Seconds) + "\n";
 
             KeyValuePair<(int, int), int> topPair = KillPairs.OrderByDescending(kv => kv.Value).FirstOrDefault();
-            if (topPair.Value > 0)
+            if (topPair.Value >= 2)
             {
                 Player? nemesisPlayer1 = Player.Get(topPair.Key.Item1);
                 Player? nemesisPlayer2 = Player.Get(topPair.Key.Item2);
@@ -154,19 +176,21 @@
 
             if (!string.IsNullOrEmpty(text))
             {
-                await Task.Delay(TimeSpan.FromSeconds(6));
                 string sizedText = $"<size={Config.RoundSummaryTextSizePercent}%>{text}</size>";
-                Map.Broadcast((ushort)Config.RoundSummaryDuration, sizedText, global::Broadcast.BroadcastFlags.Normal, true);
+                ushort duration = (ushort)Config.RoundSummaryDuration;
+
+                await Task.Delay(TimeSpan.FromSeconds(Math.Max(0, Config.RoundSummaryDelaySeconds)));
+                Map.Broadcast(duration, sizedText, global::Broadcast.BroadcastFlags.Normal, true);
             }
         }
 
         private static string GetTeamDisplayName(Team team) => team switch
         {
-            Team.SCPs => "SCPs",
-            Team.ClassD => "Class D",
-            Team.ChaosInsurgency => "Chaos Insurgency",
-            Team.FoundationForces => "Foundation Forces",
-            Team.Scientists => "Scientists",
+            Team.SCPs => Translation.TeamNameScps,
+            Team.ClassD => Translation.TeamNameClassD,
+            Team.ChaosInsurgency => Translation.TeamNameChaosInsurgency,
+            Team.FoundationForces => Translation.TeamNameFoundationForces,
+            Team.Scientists => Translation.TeamNameScientists,
             _ => team.ToString(),
         };
     }

@@ -54,6 +54,31 @@
             Player victim = ev.Player;
             int killerId = killer.Id;
 
+            if (Config.DeathStreakEnabled)
+            {
+                DeathStreaks.TryGetValue(victimId, out int currentDeathStreak);
+                currentDeathStreak++;
+                DeathStreaks[victimId] = currentDeathStreak;
+
+                if (currentDeathStreak >= Config.DeathStreakThreshold)
+                {
+                    victim.Broadcast((ushort)Math.Ceiling(Config.HintDuration), string.Format(Translation.DeathStreakHint, currentDeathStreak));
+
+                    if (Config.Debug)
+                        Log.Debug($"{victim.Nickname} reached a {currentDeathStreak}-death streak.");
+                }
+            }
+
+            if (!HitboxIdentity.IsEnemy(killer.Role.Type, ev.TargetOldRole))
+            {
+                if (Config.Debug)
+                    Log.Debug($"{killer.Nickname} killed {victim.Nickname} but they aren't enemies - not counted.");
+
+                return;
+            }
+
+            List<string> killerHints = new();
+
             if (Config.FirstBloodEnabled && !firstBloodHappened)
             {
                 firstBloodHappened = true;
@@ -76,7 +101,7 @@
 
                 if (currentStreak >= Config.KillStreakThreshold)
                 {
-                    ShowPositionedHint(killer, string.Format(Translation.KillStreakHint, currentStreak));
+                    killerHints.Add(string.Format(Translation.KillStreakHint, currentStreak));
 
                     if (Config.Debug)
                         Log.Debug($"{killer.Nickname} reached a {currentStreak}-kill streak.");
@@ -85,24 +110,10 @@
 
             DeathStreaks[killerId] = 0;
 
-            if (Config.DeathStreakEnabled)
-            {
-                DeathStreaks.TryGetValue(victimId, out int currentDeathStreak);
-                currentDeathStreak++;
-                DeathStreaks[victimId] = currentDeathStreak;
-
-                if (currentDeathStreak >= Config.DeathStreakThreshold)
-                {
-                    ShowPositionedHint(victim, string.Format(Translation.DeathStreakHint, currentDeathStreak));
-
-                    if (Config.Debug)
-                        Log.Debug($"{victim.Nickname} reached a {currentDeathStreak}-death streak.");
-                }
-            }
-
             if (Config.RevengeKillEnabled && LastKilledBy.TryGetValue(killerId, out int killersLastKillerId) && killersLastKillerId == victimId)
             {
-                ShowPositionedHint(killer, string.Format(Translation.RevengeKillHint, PlayerColor.GetColoredName(victim)));
+                killerHints.Add(string.Format(Translation.RevengeKillHint, PlayerColor.GetColoredName(victim)));
+                LastKilledBy.Remove(killerId);
 
                 if (Config.Debug)
                     Log.Debug($"{killer.Nickname} got a revenge kill on {victim.Nickname}.");
@@ -112,15 +123,18 @@
 
             if (Config.ComebackEnabled)
             {
-                double killerHealthPercent = killer.Health / killer.MaxHealth * 100.0;
+                double killerHealthPercent = killer.MaxHealth > 0 ? killer.Health / killer.MaxHealth * 100.0 : 100.0;
                 if (killerHealthPercent <= Config.ComebackHealthThreshold)
                 {
-                    ShowPositionedHint(killer, string.Format(Translation.ComebackHint, (int)killer.Health));
+                    killerHints.Add(string.Format(Translation.ComebackHint, (int)killer.Health));
 
                     if (Config.Debug)
                         Log.Debug($"{killer.Nickname} got a comeback kill at {killer.Health} HP ({killerHealthPercent:F1}%).");
                 }
             }
+
+            if (killerHints.Count > 0)
+                ShowPositionedHint(killer, string.Join("\n", killerHints));
         }
 
         private static void ShowPositionedHint(Player player, string message)

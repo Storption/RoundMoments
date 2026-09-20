@@ -31,7 +31,7 @@
         /// <summary>
         /// Gets or sets how long, in seconds, hints shown to individual players stay visible.
         /// </summary>
-        [Description("How long, in seconds, hints shown to individual players stay visible.")]
+        [Description("How long, in seconds, hints (and the death streak message) shown to individual players stay visible.")]
         public float HintDuration { get; set; } = 5;
 
         /// <summary>
@@ -95,10 +95,16 @@
         public int RoundSummaryDuration { get; set; } = 10;
 
         /// <summary>
+        /// Gets or sets how long, in seconds, to wait after the round ends before showing the round-end summary.
+        /// </summary>
+        [Description("How long, in seconds, to wait after the round ends before showing the round-end summary. The delay keeps other round-end broadcasts from clearing it.")]
+        public int RoundSummaryDelaySeconds { get; set; } = 6;
+
+        /// <summary>
         /// Gets or sets the round-end summary broadcasts text size, as a percentage of the default size.
         /// </summary>
-        [Description("The round-end summary broadcasts text size, as a percentage of the default size.")]
-        public int RoundSummaryTextSizePercent { get; set; } = 80;
+        [Description("The round-end summary broadcast's text size, as a percentage of the default size.")]
+        public int RoundSummaryTextSizePercent { get; set; } = 65;
 
         /// <summary>
         /// Gets or sets whether to check for and automatically install updates.

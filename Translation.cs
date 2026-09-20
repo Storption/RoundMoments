@@ -29,7 +29,7 @@
         /// <summary>
         /// Gets or sets the hint shown to a player when they reach a death streak.
         /// </summary>
-        [Description("The hint shown to a player when they reach a death streak. {0} is the death count.")]
+        [Description("The message shown to a player when they reach a death streak. Sent as a broadcast so it doesn't clash with other plugins' hints. {0} is the death count.")]
         public string DeathStreakHint { get; set; } = "<color=#FF0000>You've died {0} times in a row without a kill.</color>";
 
         /// <summary>
@@ -67,5 +67,41 @@
         /// </summary>
         [Description("The line in the round-end summary reporting who dealt the most damage without getting a kill. {0} is the player's name, {1} is the damage amount.")]
         public string MostDamageWithoutKillLine { get; set; } = "<color=#00FFFF>So close:</color> {0} dealt <color=yellow>{1}</color> damage without a single kill.";
+
+        /// <summary>
+        /// Gets or sets the SCP team's name as shown in the round-end summary.
+        /// </summary>
+        [Description("The SCP team's name as shown in the round-end summary.")]
+        public string TeamNameScps { get; set; } = "SCPs";
+
+        /// <summary>
+        /// Gets or sets the Class D team's name as shown in the round-end summary.
+        /// </summary>
+        [Description("The Class D team's name as shown in the round-end summary.")]
+        public string TeamNameClassD { get; set; } = "Class D";
+
+        /// <summary>
+        /// Gets or sets the Chaos Insurgency team's name as shown in the round-end summary.
+        /// </summary>
+        [Description("The Chaos Insurgency team's name as shown in the round-end summary.")]
+        public string TeamNameChaosInsurgency { get; set; } = "Chaos Insurgency";
+
+        /// <summary>
+        /// Gets or sets the Foundation Forces team's name as shown in the round-end summary.
+        /// </summary>
+        [Description("The Foundation Forces team's name (NTF and Facility Guards) as shown in the round-end summary.")]
+        public string TeamNameFoundationForces { get; set; } = "Foundation Forces";
+
+        /// <summary>
+        /// Gets or sets the Scientists team's name as shown in the round-end summary.
+        /// </summary>
+        [Description("The Scientists team's name as shown in the round-end summary.")]
+        public string TeamNameScientists { get; set; } = "Scientists";
+
+        /// <summary>
+        /// Gets or sets the broadcast shown to everyone when a plugin update has been installed and the server will restart once the round ends.
+        /// </summary>
+        [Description("The broadcast shown to everyone when a plugin update has been installed and the server will restart once the round ends. {0} is the plugin's name. Leave empty to disable.")]
+        public string AutoUpdateRestartBroadcast { get; set; } = "<color=orange>[Update]</color> {0} was updated - the server will restart after this round to apply it.";
     }
 }

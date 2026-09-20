@@ -9,12 +9,14 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 ## How it works
 
 - **Kill streaks** - a hint shown to a player once their consecutive kills reach a configurable threshold, resetting when they die.
-- **Death streaks** - the inverse: a hint shown after too many deaths in a row without landing a kill.
+- **Death streaks** - the inverse: a message shown after too many deaths in a row without landing a kill.
 - **First blood** - a broadcast to everyone the moment the round's first kill happens.
 - **Revenge kills** - a hint when a player kills the specific person who killed them last.
 - **Comeback/underdog kills** - a hint when a player gets a kill while at critically low health.
+
+*Teamkills don't count towards any of these. If one kill triggers several hints, they're shown together as a single hint.*
 - **Team wipes** - a CASSIE announcement, alarm and all, when an entire team (SCPs, Class-D, Chaos Insurgency, or Foundation Forces) is fully eliminated by death - an escaping player recruited into another team doesn't count as a wipe.
-- **Round-end summary** - a single broadcast covering the round's first blood, the first team wiped out, the longest survivor, the biggest "nemesis" pairing (whoever killed each other the most), and whoever dealt the most damage without ever landing a kill.
+- **Round-end summary** - a single broadcast, shown shortly after the round ends, covering the round's first blood, the first team wiped out, the longest survivor, the biggest "nemesis" pairing (two players who killed each other at least twice), and whoever dealt the most damage without ever landing a kill.
 - **Colored names** - every player name shown by this plugin uses their badge color when they have one, falling back to their role's color otherwise.
 - **Auto-update** - checks this plugin's own GitHub repo for a newer release, and if found, downloads and applies it automatically, restarting the server once the current round ends.
 
@@ -39,7 +41,7 @@ debug: false
 kill_streak_threshold: 3
 # The number of consecutive deaths (without a kill in between) required to trigger a death streak announcement.
 death_streak_threshold: 3
-# How long, in seconds, hints shown to individual players stay visible.
+# How long, in seconds, hints (and the death streak message) shown to individual players stay visible.
 hint_duration: 5
 # How many blank lines to pad hints with, controlling their vertical position on screen. More lines pushes the hint higher up.
 hint_line_padding: 15
@@ -61,8 +63,10 @@ comeback_health_threshold: 20
 team_wipe_enabled: true
 # How long, in seconds, the round-end summary broadcast stays visible.
 round_summary_duration: 10
+# How long, in seconds, to wait after the round ends before showing the round-end summary. The delay keeps other round-end broadcasts from clearing it.
+round_summary_delay_seconds: 6
 # The round-end summary broadcast's text size, as a percentage of the default size.
-round_summary_text_size_percent: 50
+round_summary_text_size_percent: 65
 # Whether to check for and automatically install updates.
 auto_update_enabled: true
 # Whether to keep a backup of the previous .dll before replacing it with an update.
