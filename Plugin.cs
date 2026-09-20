@@ -8,6 +8,8 @@
     /// </summary>
     public class Plugin : Plugin<Config, Translation>
     {
+        private const string LegacyKillStreakHint = "You're on a {0}-kill streak!";
+
         /// <summary>
         /// Get the only existing instance of the <see cref="Plugin"/> class.
         /// </summary>
@@ -32,6 +34,9 @@
         public override void OnEnabled()
         {
             Instance = this;
+
+            if (Translation.KillStreakHint == LegacyKillStreakHint)
+                Log.Warn("Translation file reset recommended: it still contains the plain, uncolored messages from before v1.2.0. Delete RoundMoments' translation file (EXILED/Configs/Translations/RoundMoments/<port>.yml) and restart to regenerate it with the colored defaults. If you use a single merged translations file, delete only the RoundMoments section.");
 
             Modules.TeamWipe.RegisterEvents();
             Modules.KillTracking.RegisterEvents();
