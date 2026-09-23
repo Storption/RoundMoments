@@ -20,12 +20,14 @@
         public static void RegisterEvents()
         {
             Exiled.Events.Handlers.Player.Died += OnPlayerDied;
+            Exiled.Events.Handlers.Player.Left += OnLeft;
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
         }
 
         public static void UnregisterEvents()
         {
             Exiled.Events.Handlers.Player.Died -= OnPlayerDied;
+            Exiled.Events.Handlers.Player.Left -= OnLeft;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
         }
 
@@ -135,6 +137,14 @@
 
             if (killerHints.Count > 0)
                 ShowPositionedHint(killer, string.Join("\n", killerHints));
+        }
+
+        private static void OnLeft(LeftEventArgs ev)
+        {
+            int id = ev.Player.Id;
+            KillStreaks.Remove(id);
+            DeathStreaks.Remove(id);
+            LastKilledBy.Remove(id);
         }
 
         private static void ShowPositionedHint(Player player, string message)

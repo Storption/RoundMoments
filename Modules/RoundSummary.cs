@@ -68,7 +68,13 @@
 
         private static void OnLeft(LeftEventArgs ev)
         {
-            LifeStartTimes.Remove(ev.Player.Id);
+            int id = ev.Player.Id;
+            LifeStartTimes.Remove(id);
+            DamageDealt.Remove(id);
+            HasKilled.Remove(id);
+
+            foreach ((int, int) key in KillPairs.Keys.Where(k => k.Item1 == id || k.Item2 == id).ToList())
+                KillPairs.Remove(key);
         }
 
         private static void OnPlayerHurting(HurtingEventArgs ev)

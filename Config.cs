@@ -89,6 +89,12 @@
         public bool TeamWipeEnabled { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets whether a Scientists team wipe is included in team wipe announcements. Only applies while <see cref="TeamWipeEnabled"/> is on.
+        /// </summary>
+        [Description("Whether a Scientists team wipe triggers a team wipe announcement too. Only applies while TeamWipeEnabled is on.")]
+        public bool TeamWipeIncludeScientists { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets how long, in seconds, the round-end summary broadcast stays visible.
         /// </summary>
         [Description("How long, in seconds, the round-end summary broadcast stays visible.")]

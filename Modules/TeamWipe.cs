@@ -51,7 +51,7 @@
             if (ev.Player.Role.Team == Team.Dead)
                 return;
 
-            if (ev.Player.Role.Team == Team.Scientists)
+            if (ev.Player.Role.Team == Team.Scientists && !Config.TeamWipeIncludeScientists)
                 return;
 
             if (ev.NewRole != RoleTypeId.Spectator)
@@ -68,6 +68,7 @@
                 Team.ClassD => ("ALL CLASSD PERSONNEL HAVE BEEN SECURED .", "All Class D personnel have been secured."),
                 Team.ChaosInsurgency => ("ALL CHAOSINSURGENCY PERSONNEL TERMINATED .", "All Chaos Insurgency personnel terminated."),
                 Team.FoundationForces => ("ALL FOUNDATION PERSONNEL TERMINATED .", "All Foundation personnel terminated."),
+                Team.Scientists => ("ALL SCIENTIST PERSONNEL TERMINATED .", "All Scientist personnel terminated."),
 
                 _ => null,
             };
