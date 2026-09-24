@@ -17,10 +17,10 @@
     <Reference Include="Mirror" HintPath="$(MANAGED)\Mirror.dll" Private="false" />
     <Reference Include="UnityEngine" HintPath="$(MANAGED)\UnityEngine.dll" Private="false" />
     <Reference Include="UnityEngine.CoreModule" HintPath="$(MANAGED)\UnityEngine.CoreModule.dll" Private="false" />
-	<Reference Include="UnityEngine.JSONSerializeModule" HintPath="$(MANAGED)\UnityEngine.JSONSerializeModule.dll" Private="false" />
     <Reference Include="UnityEngine.PhysicsModule" HintPath="$(MANAGED)\UnityEngine.PhysicsModule.dll" Private="false" />
     <Reference Include="Pooling" HintPath="$(MANAGED)\Pooling.dll" Private="false" />
     <Reference Include="System.Net.Http" />
+	<Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
 
 </Project>

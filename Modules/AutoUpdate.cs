@@ -4,6 +4,8 @@
     using System.IO;
     using System.Net;
     using System.Net.Http;
+    using System.Runtime.Serialization;
+    using System.Runtime.Serialization.Json;
     using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
@@ -185,21 +187,24 @@
         private static async Task<(string Tag, string DownloadUrl, string? Sha256)?> GetLatestReleaseAsync(HttpClient client)
         {
             string url = $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
-            string json = await client.GetStringAsync(url);
-            GitHubRelease? release = UnityEngine.JsonUtility.FromJson<GitHubRelease>(json);
+            byte[] json = await client.GetByteArrayAsync(url);
 
-            if (release is null || string.IsNullOrWhiteSpace(release.tag_name))
+            GitHubRelease? release;
+            using (MemoryStream stream = new(json))
+                release = new DataContractJsonSerializer(typeof(GitHubRelease)).ReadObject(stream) as GitHubRelease;
+
+            if (release is null || string.IsNullOrWhiteSpace(release.TagName))
                 return null;
 
-            GitHubAsset? asset = release.assets?.FirstOrDefault(a => string.Equals(a.name, DllFileName, StringComparison.OrdinalIgnoreCase));
-            if (asset is null || string.IsNullOrWhiteSpace(asset.browser_download_url))
+            GitHubAsset? asset = release.Assets?.FirstOrDefault(a => string.Equals(a.Name, DllFileName, StringComparison.OrdinalIgnoreCase));
+            if (asset is null || string.IsNullOrWhiteSpace(asset.DownloadUrl))
                 return null;
 
-            string? sha256 = asset.digest is not null && asset.digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
-                ? asset.digest.Substring("sha256:".Length)
+            string? sha256 = asset.Digest is not null && asset.Digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
+                ? asset.Digest.Substring("sha256:".Length)
                 : null;
 
-            return (release.tag_name!, asset.browser_download_url!, sha256);
+            return (release.TagName!, asset.DownloadUrl!, sha256);
         }
 
         private static bool TryParseVersion(string tag, out Version? version)
@@ -208,19 +213,27 @@
             return Version.TryParse(cleaned, out version);
         }
 
-        [Serializable]
+        [DataContract]
         private sealed class GitHubRelease
         {
-            public string? tag_name = null;
-            public GitHubAsset[]? assets = null;
+            [DataMember(Name = "tag_name")]
+            public string? TagName { get; set; }
+
+            [DataMember(Name = "assets")]
+            public GitHubAsset[]? Assets { get; set; }
         }
 
-        [Serializable]
+        [DataContract]
         private sealed class GitHubAsset
         {
-            public string? name = null;
-            public string? browser_download_url = null;
-            public string? digest = null;
+            [DataMember(Name = "name")]
+            public string? Name { get; set; }
+
+            [DataMember(Name = "browser_download_url")]
+            public string? DownloadUrl { get; set; }
+
+            [DataMember(Name = "digest")]
+            public string? Digest { get; set; }
         }
     }
 }
