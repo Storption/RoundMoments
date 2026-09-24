@@ -1,10 +1,10 @@
 ﻿namespace RoundMoments.Modules
 {
-    using System;
+    using System.Collections.Generic;
     using System.Linq;
-    using System.Threading.Tasks;
     using Exiled.API.Features;
     using Exiled.Events.EventArgs.Player;
+    using MEC;
     using PlayerRoles;
 
     /// <summary>
@@ -12,6 +12,8 @@
     /// </summary>
     public static class TeamWipe
     {
+        private const string CoroutineTag = "RoundMoments.TeamWipe";
+
         private static Team? firstWipeTeam;
 
         /// <summary>
@@ -31,22 +33,23 @@
         {
             Exiled.Events.Handlers.Player.ChangingRole -= OnChangingRole;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
+
+            Timing.KillCoroutines(CoroutineTag);
         }
 
         private static void OnWaitingForPlayers()
         {
+            Timing.KillCoroutines(CoroutineTag);
             firstWipeTeam = null;
         }
 
-        private static async void OnChangingRole(ChangingRoleEventArgs ev)
+        private static void OnChangingRole(ChangingRoleEventArgs ev)
         {
             if (!Config.TeamWipeEnabled)
                 return;
 
             if (!ev.IsAllowed)
                 return;
-
-            bool debug = Config.Debug;
 
             if (ev.Player.Role.Team == Team.Dead)
                 return;
@@ -76,20 +79,29 @@
             if (cassieAnnouncement is null)
                 return;
 
-            if (wipedTeam == Team.SCPs)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1));
-
-                DateTime waitStarted = DateTime.Now;
-                while (Cassie.IsSpeaking && DateTime.Now - waitStarted < TimeSpan.FromSeconds(15))
-                    await Task.Delay(TimeSpan.FromMilliseconds(500));
-            }
-
-            Cassie.MessageTranslated(cassieAnnouncement.Value.Cassie, cassieAnnouncement.Value.Subtitle, true);
             firstWipeTeam ??= wipedTeam;
 
-            if (debug)
+            if (Config.Debug)
                 Log.Debug($"Team wipe detected for {wipedTeam}. Cassie phrase: {cassieAnnouncement.Value.Cassie}.");
+
+            Timing.RunCoroutine(Announce(wipedTeam, cassieAnnouncement.Value.Cassie, cassieAnnouncement.Value.Subtitle), CoroutineTag);
+        }
+
+        private static IEnumerator<float> Announce(Team wipedTeam, string cassie, string subtitle)
+        {
+            if (wipedTeam == Team.SCPs)
+            {
+                yield return Timing.WaitForSeconds(1f);
+
+                float waited = 0f;
+                while (Cassie.IsSpeaking && waited < 15f)
+                {
+                    yield return Timing.WaitForSeconds(0.5f);
+                    waited += 0.5f;
+                }
+            }
+
+            Cassie.MessageTranslated(cassie, subtitle, true);
         }
     }
 }

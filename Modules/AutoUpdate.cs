@@ -8,7 +8,6 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Exiled.API.Features;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Checks GitHub for a newer release of this plugin and, if found, downloads it and restarts
@@ -187,32 +186,41 @@
         {
             string url = $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
             string json = await client.GetStringAsync(url);
-            JObject release = JObject.Parse(json);
+            GitHubRelease? release = UnityEngine.JsonUtility.FromJson<GitHubRelease>(json);
 
-            string? tagName = release["tag_name"]?.ToString();
-            if (string.IsNullOrWhiteSpace(tagName))
+            if (release is null || string.IsNullOrWhiteSpace(release.tag_name))
                 return null;
 
-            JToken? asset = (release["assets"] as JArray)
-                ?.FirstOrDefault(a =>
-                    string.Equals(a["name"]?.ToString(), DllFileName, StringComparison.OrdinalIgnoreCase));
-
-            string? downloadUrl = asset?["browser_download_url"]?.ToString();
-            if (string.IsNullOrWhiteSpace(downloadUrl))
+            GitHubAsset? asset = release.assets?.FirstOrDefault(a => string.Equals(a.name, DllFileName, StringComparison.OrdinalIgnoreCase));
+            if (asset is null || string.IsNullOrWhiteSpace(asset.browser_download_url))
                 return null;
 
-            string? digest = asset?["digest"]?.ToString();
-            string? sha256 = digest is not null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
-                ? digest.Substring("sha256:".Length)
+            string? sha256 = asset.digest is not null && asset.digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
+                ? asset.digest.Substring("sha256:".Length)
                 : null;
 
-            return (tagName!, downloadUrl!, sha256);
+            return (release.tag_name!, asset.browser_download_url!, sha256);
         }
 
         private static bool TryParseVersion(string tag, out Version? version)
         {
             string cleaned = tag.TrimStart('v', 'V');
             return Version.TryParse(cleaned, out version);
+        }
+
+        [Serializable]
+        private sealed class GitHubRelease
+        {
+            public string? tag_name = null;
+            public GitHubAsset[]? assets = null;
+        }
+
+        [Serializable]
+        private sealed class GitHubAsset
+        {
+            public string? name = null;
+            public string? browser_download_url = null;
+            public string? digest = null;
         }
     }
 }

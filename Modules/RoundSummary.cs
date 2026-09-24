@@ -3,10 +3,10 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading.Tasks;
     using Exiled.API.Features;
     using Exiled.Events.EventArgs.Player;
     using Exiled.Events.EventArgs.Server;
+    using MEC;
     using PlayerRoles;
 
     /// <summary>
@@ -26,6 +26,8 @@
         private static Config Config => Plugin.Instance!.Config;
         private static Translation Translation => Plugin.Instance!.Translation;
 
+        private static CoroutineHandle summaryBroadcast;
+
         public static void RegisterEvents()
         {
             Exiled.Events.Handlers.Player.Spawned += OnSpawned;
@@ -44,10 +46,14 @@
             Exiled.Events.Handlers.Player.Hurting -= OnPlayerHurting;
             Exiled.Events.Handlers.Server.RoundEnded -= OnRoundEnded;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
+
+            Timing.KillCoroutines(summaryBroadcast);
         }
 
         private static void OnWaitingForPlayers()
         {
+            Timing.KillCoroutines(summaryBroadcast);
+
             LifeStartTimes.Clear();
             KillPairs.Clear();
             DamageDealt.Clear();
@@ -82,7 +88,7 @@
             if (!ev.IsAllowed || ev.Attacker is null || ev.Player is null || ev.Attacker == ev.Player)
                 return;
 
-            if (!HitboxIdentity.IsEnemy(ev.Attacker.Role.Type, ev.Player.Role.Type))
+            if (!HitboxIdentity.IsEnemy(KillCredit.GetAttackerRole(ev.DamageHandler, ev.Attacker), ev.Player.Role.Type))
                 return;
 
             int attackerId = ev.Attacker.Id;
@@ -112,13 +118,11 @@
                     Log.Debug($"{ev.Player.Nickname} (id={victimId}) died after surviving {survived.Minutes}m {survived.Seconds}s.");
             }
 
-            if (ev.Attacker is null || ev.Attacker == ev.Player)
+            Player? killer = KillCredit.GetKiller(ev, out RoleTypeId killerRole);
+            if (killer is null || !HitboxIdentity.IsEnemy(killerRole, ev.TargetOldRole))
                 return;
 
-            if (!HitboxIdentity.IsEnemy(ev.Attacker.Role.Type, ev.TargetOldRole))
-                return;
-
-            int killerId = ev.Attacker.Id;
+            int killerId = killer.Id;
             firstBloodKillerId ??= killerId;
 
             HasKilled[killerId] = true;
@@ -129,7 +133,7 @@
             KillPairs[pairKey] = currentPairKills + 1;
         }
 
-        private static async void OnRoundEnded(RoundEndedEventArgs ev)
+        private static void OnRoundEnded(RoundEndedEventArgs ev)
         {
             foreach (Player player in Player.List.Where(p => p.IsAlive))
             {
@@ -185,8 +189,7 @@
                 string sizedText = $"<size={Config.RoundSummaryTextSizePercent}%>{text}</size>";
                 ushort duration = (ushort)Config.RoundSummaryDuration;
 
-                await Task.Delay(TimeSpan.FromSeconds(Math.Max(0, Config.RoundSummaryDelaySeconds)));
-                Map.Broadcast(duration, sizedText, global::Broadcast.BroadcastFlags.Normal, true);
+                summaryBroadcast = Timing.CallDelayed(Math.Max(0, Config.RoundSummaryDelaySeconds), () => Map.Broadcast(duration, sizedText, global::Broadcast.BroadcastFlags.Normal, true));
             }
         }
 

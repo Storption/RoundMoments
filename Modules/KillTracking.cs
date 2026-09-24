@@ -3,6 +3,7 @@
     using System.Collections.Generic;
     using Exiled.API.Features;
     using Exiled.Events.EventArgs.Player;
+    using PlayerRoles;
 
     /// <summary>
     /// Tracks kill streaks, death streaks, first blood, revenge kills, and comeback callouts.
@@ -49,10 +50,10 @@
             if (KillStreaks.ContainsKey(victimId))
                 KillStreaks[victimId] = 0;
 
-            if (ev.Attacker is null || ev.Attacker == ev.Player)
+            Player? killer = KillCredit.GetKiller(ev, out RoleTypeId killerRole);
+            if (killer is null)
                 return;
 
-            Player killer = ev.Attacker;
             Player victim = ev.Player;
             int killerId = killer.Id;
 
@@ -71,7 +72,7 @@
                 }
             }
 
-            if (!HitboxIdentity.IsEnemy(killer.Role.Type, ev.TargetOldRole))
+            if (!HitboxIdentity.IsEnemy(killerRole, ev.TargetOldRole))
             {
                 if (Config.Debug)
                     Log.Debug($"{killer.Nickname} killed {victim.Nickname} but they aren't enemies - not counted.");
