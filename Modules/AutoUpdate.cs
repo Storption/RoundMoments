@@ -4,11 +4,12 @@
     using System.IO;
     using System.Net;
     using System.Net.Http;
-    using System.Runtime.Serialization;
     using System.Runtime.Serialization.Json;
     using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Xml;
+    using System.Xml.Linq;
     using Exiled.API.Features;
 
     /// <summary>
@@ -189,51 +190,33 @@
             string url = $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
             byte[] json = await client.GetByteArrayAsync(url);
 
-            GitHubRelease? release;
-            using (MemoryStream stream = new(json))
-                release = new DataContractJsonSerializer(typeof(GitHubRelease)).ReadObject(stream) as GitHubRelease;
+            XElement release;
+            using (XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(json, XmlDictionaryReaderQuotas.Max))
+                release = XElement.Load(reader);
 
-            if (release is null || string.IsNullOrWhiteSpace(release.TagName))
+            string? tag = release.Element("tag_name")?.Value;
+            if (string.IsNullOrWhiteSpace(tag))
                 return null;
 
-            GitHubAsset? asset = release.Assets?.FirstOrDefault(a => string.Equals(a.Name, DllFileName, StringComparison.OrdinalIgnoreCase));
-            if (asset is null || string.IsNullOrWhiteSpace(asset.DownloadUrl))
+            XElement? asset = release.Element("assets")?.Elements()
+                .FirstOrDefault(a => string.Equals(a.Element("name")?.Value, DllFileName, StringComparison.OrdinalIgnoreCase));
+
+            string? downloadUrl = asset?.Element("browser_download_url")?.Value;
+            if (string.IsNullOrWhiteSpace(downloadUrl))
                 return null;
 
-            string? sha256 = asset.Digest is not null && asset.Digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
-                ? asset.Digest.Substring("sha256:".Length)
+            string? digest = asset!.Element("digest")?.Value;
+            string? sha256 = digest is not null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
+                ? digest.Substring("sha256:".Length)
                 : null;
 
-            return (release.TagName!, asset.DownloadUrl!, sha256);
+            return (tag!, downloadUrl!, sha256);
         }
 
         private static bool TryParseVersion(string tag, out Version? version)
         {
             string cleaned = tag.TrimStart('v', 'V');
             return Version.TryParse(cleaned, out version);
-        }
-
-        [DataContract]
-        private sealed class GitHubRelease
-        {
-            [DataMember(Name = "tag_name")]
-            public string? TagName { get; set; }
-
-            [DataMember(Name = "assets")]
-            public GitHubAsset[]? Assets { get; set; }
-        }
-
-        [DataContract]
-        private sealed class GitHubAsset
-        {
-            [DataMember(Name = "name")]
-            public string? Name { get; set; }
-
-            [DataMember(Name = "browser_download_url")]
-            public string? DownloadUrl { get; set; }
-
-            [DataMember(Name = "digest")]
-            public string? Digest { get; set; }
         }
     }
 }
