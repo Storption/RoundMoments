@@ -14,8 +14,8 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 - **Revenge kills** - a hint when a player kills the specific person who killed them last.
 - **Comeback/underdog kills** - a hint when a player gets a kill while at critically low health.
 - **Team wipes** - a CASSIE announcement, alarm and all, when an entire team (SCPs, Class-D, Scientists, Chaos Insurgency, or Foundation Forces) is fully eliminated by death - an escaping player recruited into another team doesn't count as a wipe. Scientists can be left out with `team_wipe_include_scientists`.
-- **Round-end summary** - a single broadcast, shown shortly after the round ends, covering the round's first blood, the first team wiped out, the longest survivor, the biggest "nemesis" pairing (two players who killed each other at least twice), and whoever dealt the most damage without ever landing a kill.
-- **Colored names** - every player name shown by this plugin uses their role's color.
+- **Round-end summary** - a single broadcast, shown shortly after the round ends, covering the round's first blood, the first team wiped out, the longest-surviving human, the biggest "nemesis" pairing (two players who killed each other at least twice), and whoever dealt the most damage without ever landing a kill.
+- **Colored names** - every player name shown by this plugin uses the color of the role they had at that moment (the role they killed or died as), not whatever they are when the message appears.
 - **Auto-update** - checks this plugin's own GitHub repo for a newer release, and if found, downloads and applies it automatically, restarting the server once the current round ends.
 
 *Teamkills don't count towards any kill callout or stat, and a player's side is judged by the role they had when they dealt the damage - so a grenade that lands after its thrower died still counts. A death in the Pocket Dimension counts as a kill for the SCP-106 who sent the player there. If one kill triggers several hints, they're shown together as a single hint.*

@@ -57,6 +57,14 @@
             Player victim = ev.Player;
             int killerId = killer.Id;
 
+            if (!HitboxIdentity.IsEnemy(killerRole, ev.TargetOldRole))
+            {
+                if (Config.Debug)
+                    Log.Debug($"{killer.Nickname} killed {victim.Nickname} but they aren't enemies - not counted.");
+
+                return;
+            }
+
             if (Config.DeathStreakEnabled)
             {
                 DeathStreaks.TryGetValue(victimId, out int currentDeathStreak);
@@ -72,20 +80,12 @@
                 }
             }
 
-            if (!HitboxIdentity.IsEnemy(killerRole, ev.TargetOldRole))
-            {
-                if (Config.Debug)
-                    Log.Debug($"{killer.Nickname} killed {victim.Nickname} but they aren't enemies - not counted.");
-
-                return;
-            }
-
             List<string> killerHints = new();
 
             if (Config.FirstBloodEnabled && !firstBloodHappened)
             {
                 firstBloodHappened = true;
-                string coloredName = PlayerColor.GetColoredName(killer);
+                string coloredName = PlayerColor.GetColoredName(killer.Nickname, killerRole);
                 string message = string.Format(Translation.FirstBloodBroadcast, coloredName);
                 Map.Broadcast((ushort)Config.FirstBloodBroadcastDuration, message);
 
@@ -115,7 +115,7 @@
 
             if (Config.RevengeKillEnabled && LastKilledBy.TryGetValue(killerId, out int killersLastKillerId) && killersLastKillerId == victimId)
             {
-                killerHints.Add(string.Format(Translation.RevengeKillHint, PlayerColor.GetColoredName(victim)));
+                killerHints.Add(string.Format(Translation.RevengeKillHint, PlayerColor.GetColoredName(victim.Nickname, ev.TargetOldRole)));
                 LastKilledBy.Remove(killerId);
 
                 if (Config.Debug)
@@ -150,7 +150,7 @@
 
         private static void ShowPositionedHint(Player player, string message)
         {
-            string padding = new('\n', Config.HintLinePadding);
+            string padding = new('\n', Math.Max(0, Config.HintLinePadding));
             player.ShowHint($"{padding}{message}", Config.HintDuration);
         }
     }
