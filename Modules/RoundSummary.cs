@@ -159,9 +159,8 @@
             if (firstBlood is { } killer)
                 text += string.Format(Translation.FirstBloodLine, PlayerColor.GetColoredName(killer.Name, killer.Role)) + "\n";
 
-            Team? firstWipeTeam = TeamWipe.FirstWipeTeam;
-            if (firstWipeTeam.HasValue)
-                text += string.Format(Translation.FirstTeamWipeLine, GetTeamDisplayName(firstWipeTeam.Value)) + "\n";
+            if (TeamWipe.FirstWipeTeamName is string firstWipeTeamName)
+                text += string.Format(Translation.FirstTeamWipeLine, firstWipeTeamName) + "\n";
 
             if (bestSurvivor is { } survivor)
                 text += string.Format(Translation.LongestSurvivalLine, PlayerColor.GetColoredName(survivor.Name, survivor.Role), (int)bestSurvivalTime.TotalMinutes, bestSurvivalTime.Seconds) + "\n";
@@ -207,15 +206,5 @@
 
         // Colored by the role they last fought as, since most players are spectators by the time the round ends.
         private static string GetAttackerName(Player player) => PlayerColor.GetColoredName(player.Nickname, LastAttackRoles.TryGetValue(player.Id, out RoleTypeId role) ? role : player.Role.Type);
-
-        private static string GetTeamDisplayName(Team team) => team switch
-        {
-            Team.SCPs => Translation.TeamNameScps,
-            Team.ClassD => Translation.TeamNameClassD,
-            Team.ChaosInsurgency => Translation.TeamNameChaosInsurgency,
-            Team.FoundationForces => Translation.TeamNameFoundationForces,
-            Team.Scientists => Translation.TeamNameScientists,
-            _ => team.ToString(),
-        };
     }
 }

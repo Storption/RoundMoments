@@ -1,6 +1,6 @@
 # RoundMoments
 
-Announces notable moments of a round and a round-end stats summary. Current version: **v1.4.1**.
+Announces notable moments of a round and a round-end stats summary. Current version: **v1.5.0**.
 
 See `../CLAUDE.md` for shared plugin conventions and the `AutoUpdate` module design.
 
@@ -8,6 +8,11 @@ See `../CLAUDE.md` for shared plugin conventions and the `AutoUpdate` module des
 
 - `Plugin.cs`, `Config.cs`, `Translation.cs`
 - `Modules/` — `KillCredit.cs`, `TeamWipe.cs`, `KillTracking.cs`, `RoundSummary.cs`, `PlayerColor.cs`, `AutoUpdate.cs` (shared, see `../CLAUDE.md`)
+- `API/` — the public API other plugins use (`CustomTeam`, `CustomTeams`). It's a contract: don't rename or change the signatures of anything public in it without a major version, since plugins compiled against it would break. Additions are fine.
+
+## Public API (v1.5.0+)
+
+Other plugins register `CustomTeam`s (name, membership check, CASSIE wipe line) through `CustomTeams.Register`/`Unregister`; AnomalyFactions does this for Serpent's Hand, as a soft dependency. `TeamWipe.OnDying` handles them: when a dying player is on a registered team and no other living player is, it records the team's name as the first team wiped (if none yet) and plays its CASSIE line. It runs on `Dying`, not `ChangingRole`, because the owning plugin may already have dropped the player from its team by `ChangingRole` (AnomalyFactions removes members there). Vanilla wipes are untouched, so a custom team on vanilla roles also counts towards its vanilla team. `CustomTeams.IsMember` wraps the foreign check in try/catch so another plugin's bug can't break RoundMoments' handlers. The registry is static and isn't cleared when RoundMoments reloads; owners unregister their own teams. The first-wiped team is stored as a display name (`TeamWipe.FirstWipeTeamName`), so vanilla and custom teams share the summary line. The README's "For plugin developers" section documents the API and the soft-dependency pattern.
 
 Each module tracks its own state independently rather than sharing data — e.g. `RoundSummary` re-tracks kills/damage itself rather than reading `KillTracking`'s data. Two deliberate exceptions, because the logic can only live in one place: `TeamWipe` exposes `FirstWipeTeam` for `RoundSummary`, and `KillCredit` decides who gets credit for a kill for both `KillTracking` and `RoundSummary`.
 

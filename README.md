@@ -78,3 +78,23 @@ auto_update_restart: true
 ```
 
 All hint and broadcast text is configurable via the generated translation file, including every message's exact wording.
+
+## For developers
+
+RoundMoments has a small public API for plugins that add their own teams, such as a custom faction made of Tutorials. A registered team gets a team-wipe announcement when its last living member dies, and can appear as the round summary's first team wiped out. Vanilla teams aren't affected: a custom team built on vanilla roles still counts towards its vanilla team too.
+
+```csharp
+using RoundMoments.API;
+
+CustomTeam team = new(
+    "Serpent's Hand",                        // shown in the round summary
+    player => IsSerpentsHand(player),         // your own membership check
+    "ALL SERPENTS HAND PERSONNEL TERMINATED .", // CASSIE when the team is wiped out, or empty for none
+    "All Serpent's Hand personnel terminated.");
+
+CustomTeams.Register(team);   // in OnEnabled
+CustomTeams.Unregister(team); // in OnDisabled
+```
+
+- The membership check runs while a player is dying, before their role changes, so it can still see them as a member. Exceptions it throws are logged and treated as "not a member".
+- Available from v1.5.0. To make RoundMoments optional, reference `RoundMoments.dll` without copying it, put every call to `RoundMoments.API` in one class of its own, and only call that class when `Exiled.Loader.Loader.Plugins` contains RoundMoments v1.5.0 or later. A plugin that requires RoundMoments can call the API directly.

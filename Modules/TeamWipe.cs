@@ -6,32 +6,36 @@
     using Exiled.Events.EventArgs.Player;
     using MEC;
     using PlayerRoles;
+    using RoundMoments.API;
 
     /// <summary>
-    /// Announces when an entire team has been wiped out.
+    /// Announces when an entire team, vanilla or registered through <see cref="CustomTeams"/>, has been wiped out.
     /// </summary>
     public static class TeamWipe
     {
         private const string CoroutineTag = "RoundMoments.TeamWipe";
 
-        private static Team? firstWipeTeam;
+        private static string? firstWipeTeamName;
 
         /// <summary>
-        /// Gets the team that was wiped out first this round, or null if no team has been wiped yet.
+        /// Gets the display name of the team that was wiped out first this round, or null if no team has been wiped yet.
         /// </summary>
-        public static Team? FirstWipeTeam => firstWipeTeam;
+        public static string? FirstWipeTeamName => firstWipeTeamName;
 
         private static Config Config => Plugin.Instance!.Config;
+        private static Translation Translation => Plugin.Instance!.Translation;
 
         public static void RegisterEvents()
         {
             Exiled.Events.Handlers.Player.ChangingRole += OnChangingRole;
+            Exiled.Events.Handlers.Player.Dying += OnDying;
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
         }
 
         public static void UnregisterEvents()
         {
             Exiled.Events.Handlers.Player.ChangingRole -= OnChangingRole;
+            Exiled.Events.Handlers.Player.Dying -= OnDying;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
 
             Timing.KillCoroutines(CoroutineTag);
@@ -40,7 +44,7 @@
         private static void OnWaitingForPlayers()
         {
             Timing.KillCoroutines(CoroutineTag);
-            firstWipeTeam = null;
+            firstWipeTeamName = null;
         }
 
         private static void OnChangingRole(ChangingRoleEventArgs ev)
@@ -79,17 +83,37 @@
             if (cassieAnnouncement is null)
                 return;
 
-            firstWipeTeam ??= wipedTeam;
+            firstWipeTeamName ??= GetTeamDisplayName(wipedTeam);
 
             if (Config.Debug)
                 Log.Debug($"Team wipe detected for {wipedTeam}. Cassie phrase: {cassieAnnouncement.Value.Cassie}.");
 
-            Timing.RunCoroutine(Announce(wipedTeam, cassieAnnouncement.Value.Cassie, cassieAnnouncement.Value.Subtitle), CoroutineTag);
+            Timing.RunCoroutine(Announce(cassieAnnouncement.Value.Cassie, cassieAnnouncement.Value.Subtitle, waitForCassie: wipedTeam == Team.SCPs), CoroutineTag);
         }
 
-        private static IEnumerator<float> Announce(Team wipedTeam, string cassie, string subtitle)
+        // Custom teams are judged on Dying, while the dying player's role is still intact: by ChangingRole, the plugin
+        // that owns the team may already have taken them off it.
+        private static void OnDying(DyingEventArgs ev)
         {
-            if (wipedTeam == Team.SCPs)
+            if (!Config.TeamWipeEnabled || !ev.IsAllowed || CustomTeams.Get(ev.Player) is not CustomTeam team)
+                return;
+
+            if (Player.List.Any(player => player != ev.Player && player.IsAlive && CustomTeams.IsMember(team, player)))
+                return;
+
+            firstWipeTeamName ??= team.Name;
+
+            if (Config.Debug)
+                Log.Debug($"Team wipe detected for the custom team {team.Name}.");
+
+            if (!string.IsNullOrEmpty(team.CassieMessage))
+                Timing.RunCoroutine(Announce(team.CassieMessage, team.CassieSubtitles, waitForCassie: false), CoroutineTag);
+        }
+
+        private static IEnumerator<float> Announce(string cassie, string subtitle, bool waitForCassie)
+        {
+            // The game announces each SCP's termination itself; let that finish first.
+            if (waitForCassie)
             {
                 yield return Timing.WaitForSeconds(1f);
 
@@ -103,5 +127,15 @@
 
             Cassie.MessageTranslated(cassie, subtitle, true);
         }
+
+        private static string GetTeamDisplayName(Team team) => team switch
+        {
+            Team.SCPs => Translation.TeamNameScps,
+            Team.ClassD => Translation.TeamNameClassD,
+            Team.ChaosInsurgency => Translation.TeamNameChaosInsurgency,
+            Team.FoundationForces => Translation.TeamNameFoundationForces,
+            Team.Scientists => Translation.TeamNameScientists,
+            _ => team.ToString(),
+        };
     }
 }
