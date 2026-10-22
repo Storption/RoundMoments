@@ -8,18 +8,12 @@
     using PlayerRoles;
     using RoundMoments.API;
 
-    /// <summary>
-    /// Announces when an entire team, vanilla or registered through <see cref="CustomTeams"/>, has been wiped out.
-    /// </summary>
     public static class TeamWipe
     {
         private const string CoroutineTag = "RoundMoments.TeamWipe";
 
         private static string? firstWipeTeamName;
 
-        /// <summary>
-        /// Gets the display name of the team that was wiped out first this round, or null if no team has been wiped yet.
-        /// </summary>
         public static string? FirstWipeTeamName => firstWipeTeamName;
 
         private static Config Config => Plugin.Instance!.Config;
@@ -95,7 +89,7 @@
         // that owns the team may already have taken them off it.
         private static void OnDying(DyingEventArgs ev)
         {
-            if (!Config.TeamWipeEnabled || !ev.IsAllowed || CustomTeams.Get(ev.Player) is not CustomTeam team)
+            if (!Config.TeamWipeEnabled || !ev.IsAllowed || CustomTeams.Get(ev.Player) is not CustomTeam { TracksWipe: true } team)
                 return;
 
             if (Player.List.Any(player => player != ev.Player && player.IsAlive && CustomTeams.IsMember(team, player)))

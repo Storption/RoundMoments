@@ -2,10 +2,11 @@
 {
     using System;
     using Exiled.API.Features;
+    using PlayerRoles;
 
     /// <summary>
-    /// A team added by another plugin, such as a custom faction, that RoundMoments treats like a vanilla team
-    /// when it's wiped out.
+    /// A team added by another plugin, such as a custom faction or role, that RoundMoments treats like a vanilla team:
+    /// for teamkills, name colors and when it's wiped out.
     /// </summary>
     public sealed class CustomTeam
     {
@@ -43,5 +44,22 @@
         /// Gets the subtitles for <see cref="CassieMessage"/>.
         /// </summary>
         public string CassieSubtitles { get; }
+
+        /// <summary>
+        /// Gets or sets the color of members' names, as a hex code like <c>#FF96DE</c>, or null to use their role's color.
+        /// </summary>
+        public string? Color { get; set; }
+
+        /// <summary>
+        /// Gets or sets the vanilla faction this team fights alongside, or null if it's only on its own side. Kills between
+        /// members, or between a member and an ally, count as teamkills; any other kill involving a member is an enemy kill.
+        /// </summary>
+        public Faction? Allies { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the team being wiped out is announced and can be the round summary's
+        /// first team wiped. Turn it off for a team that's really a single role.
+        /// </summary>
+        public bool TracksWipe { get; set; } = true;
     }
 }

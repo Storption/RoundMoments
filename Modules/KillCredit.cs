@@ -7,20 +7,19 @@
     using Exiled.Events.EventArgs.Player;
     using Footprinting;
     using PlayerRoles;
+    using RoundMoments.API;
 
-    /// <summary>
-    /// Works out who gets credit for a kill: the attacker as they were when the damage was dealt,
-    /// or the SCP-106 who sent the victim into the pocket dimension.
-    /// </summary>
     public static class KillCredit
     {
         private static readonly Dictionary<int, int> CapturedBy = new();
+        private static readonly Dictionary<int, CustomTeam?> DyingTeams = new();
 
         public static void RegisterEvents()
         {
             Exiled.Events.Handlers.Player.EnteringPocketDimension += OnEnteringPocketDimension;
             Exiled.Events.Handlers.Player.EscapingPocketDimension += OnEscapingPocketDimension;
             Exiled.Events.Handlers.Player.Spawned += OnSpawned;
+            Exiled.Events.Handlers.Player.Dying += OnDying;
             Exiled.Events.Handlers.Player.Left += OnLeft;
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
         }
@@ -30,15 +29,14 @@
             Exiled.Events.Handlers.Player.EnteringPocketDimension -= OnEnteringPocketDimension;
             Exiled.Events.Handlers.Player.EscapingPocketDimension -= OnEscapingPocketDimension;
             Exiled.Events.Handlers.Player.Spawned -= OnSpawned;
+            Exiled.Events.Handlers.Player.Dying -= OnDying;
             Exiled.Events.Handlers.Player.Left -= OnLeft;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
 
             CapturedBy.Clear();
+            DyingTeams.Clear();
         }
 
-        /// <summary>
-        /// Gets the player credited with a death, or null if nobody is. <paramref name="killerRole"/> is their role when the damage was dealt.
-        /// </summary>
         public static Player? GetKiller(DiedEventArgs ev, out RoleTypeId killerRole)
         {
             killerRole = RoleTypeId.None;
@@ -63,14 +61,31 @@
             return scp106;
         }
 
-        /// <summary>
-        /// Gets the attacker's role when the damage was dealt - not the same as their current role for delayed damage, like a grenade thrown before they died.
-        /// </summary>
         public static RoleTypeId GetAttackerRole(CustomDamageHandler damageHandler, Player attacker)
         {
             Footprint footprint = damageHandler.AttackerFootprint;
             return footprint.IsSet ? footprint.Role : attacker.Role.Type;
         }
+
+        // Only while they're on the life the damage came from: a grenade's thrower may have died since.
+        public static CustomTeam? GetAttackerTeam(CustomDamageHandler damageHandler, Player attacker)
+        {
+            Footprint footprint = damageHandler.AttackerFootprint;
+            bool sameLife = attacker.IsAlive && (!footprint.IsSet || footprint.LifeIdentifier == attacker.ReferenceHub.roleManager.CurrentRole.UniqueLifeIdentifier);
+            return sameLife ? CustomTeams.Get(attacker) : null;
+        }
+
+        public static CustomTeam? GetVictimTeam(Player victim) => DyingTeams.TryGetValue(victim.Id, out CustomTeam? team) ? team : null;
+
+        public static bool IsEnemyKill(DiedEventArgs ev, Player killer, RoleTypeId killerRole, out CustomTeam? killerTeam, out CustomTeam? victimTeam)
+        {
+            killerTeam = GetAttackerTeam(ev.DamageHandler, killer);
+            victimTeam = GetVictimTeam(ev.Player);
+            return CustomTeams.AreEnemies(killerRole, killerTeam, ev.TargetOldRole, victimTeam);
+        }
+
+        // By Died, the plugin that owns a team may already have taken the player off it.
+        private static void OnDying(DyingEventArgs ev) => DyingTeams[ev.Player.Id] = CustomTeams.Get(ev.Player);
 
         private static void OnEnteringPocketDimension(EnteringPocketDimensionEventArgs ev)
         {
@@ -94,11 +109,13 @@
         private static void OnLeft(LeftEventArgs ev)
         {
             CapturedBy.Remove(ev.Player.Id);
+            DyingTeams.Remove(ev.Player.Id);
         }
 
         private static void OnWaitingForPlayers()
         {
             CapturedBy.Clear();
+            DyingTeams.Clear();
         }
     }
 }

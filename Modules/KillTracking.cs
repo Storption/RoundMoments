@@ -4,10 +4,8 @@
     using Exiled.API.Features;
     using Exiled.Events.EventArgs.Player;
     using PlayerRoles;
+    using RoundMoments.API;
 
-    /// <summary>
-    /// Tracks kill streaks, death streaks, first blood, revenge kills, and comeback callouts.
-    /// </summary>
     public static class KillTracking
     {
         private static readonly Dictionary<int, int> KillStreaks = new();
@@ -57,7 +55,7 @@
             Player victim = ev.Player;
             int killerId = killer.Id;
 
-            if (!HitboxIdentity.IsEnemy(killerRole, ev.TargetOldRole))
+            if (!KillCredit.IsEnemyKill(ev, killer, killerRole, out CustomTeam? killerTeam, out CustomTeam? victimTeam))
             {
                 if (Config.Debug)
                     Log.Debug($"{killer.Nickname} killed {victim.Nickname} but they aren't enemies - not counted.");
@@ -85,7 +83,7 @@
             if (Config.FirstBloodEnabled && !firstBloodHappened)
             {
                 firstBloodHappened = true;
-                string coloredName = PlayerColor.GetColoredName(killer.Nickname, killerRole);
+                string coloredName = PlayerColor.GetColoredName(killer.Nickname, PlayerColor.Get(killerRole, killerTeam));
                 string message = string.Format(Translation.FirstBloodBroadcast, coloredName);
                 Map.Broadcast((ushort)Config.FirstBloodBroadcastDuration, message);
 
@@ -115,7 +113,7 @@
 
             if (Config.RevengeKillEnabled && LastKilledBy.TryGetValue(killerId, out int killersLastKillerId) && killersLastKillerId == victimId)
             {
-                killerHints.Add(string.Format(Translation.RevengeKillHint, PlayerColor.GetColoredName(victim.Nickname, ev.TargetOldRole)));
+                killerHints.Add(string.Format(Translation.RevengeKillHint, PlayerColor.GetColoredName(victim.Nickname, PlayerColor.Get(ev.TargetOldRole, victimTeam))));
                 LastKilledBy.Remove(killerId);
 
                 if (Config.Debug)

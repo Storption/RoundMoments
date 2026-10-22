@@ -22,7 +22,7 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 - **Colored names** - every player name shown by this plugin uses the color of the role they had at that moment (the role they killed or died as), not whatever they are when the message appears.
 - **Auto-update** - checks this plugin's own GitHub repo for a newer release, and if found, downloads and applies it automatically, restarting the server once the current round ends.
 
-*Teamkills don't count towards any kill callout or stat, and a player's side is judged by the role they had when they dealt the damage - so a grenade that lands after its thrower died still counts. A death in the Pocket Dimension counts as a kill for the SCP-106 who sent the player there. If one kill triggers several hints, they're shown together as a single hint.*
+*Teamkills don't count towards any kill callout or stat, and a player's side is judged by the role they had when they dealt the damage (or by their custom team, if another plugin registered one) - so a grenade that lands after its thrower died still counts. A death in the Pocket Dimension counts as a kill for the SCP-106 who sent the player there. If one kill triggers several hints, they're shown together as a single hint.*
 
 ## Requirements
 
@@ -85,20 +85,32 @@ All hint and broadcast text is configurable via the generated translation file, 
 
 ## For developers
 
-RoundMoments has a small public API for plugins that add their own teams, such as a custom faction made of Tutorials. A registered team gets a team-wipe announcement when its last living member dies, and can appear as the round summary's first team wiped out. Vanilla teams aren't affected: a custom team built on vanilla roles still counts towards its vanilla team too.
+RoundMoments has a small public API for plugins that add their own teams or roles, such as a custom faction made of Tutorials. A registered team:
+
+- decides teamkills: members, and members and their allies, are on one side; any other kill involving a member is an enemy kill. Without a custom team on either side, the game's own rule applies.
+- colors its members' names in kill hints and the round summary.
+- gets a team-wipe announcement when its last living member dies, and can appear as the round summary's first team wiped out.
+
+Vanilla teams aren't affected: a custom team built on vanilla roles still counts towards its vanilla team's wipe too.
 
 ```csharp
+using PlayerRoles;
 using RoundMoments.API;
 
 CustomTeam team = new(
     "Serpent's Hand",                        // shown in the round summary
     player => IsSerpentsHand(player),         // your own membership check
     "ALL SERPENTS HAND PERSONNEL TERMINATED .", // CASSIE when the team is wiped out, or empty for none
-    "All Serpent's Hand personnel terminated.");
+    "All Serpent's Hand personnel terminated.")
+{
+    Color = "#FF96DE",        // members' names, or null for their role's color
+    Allies = Faction.SCP,     // the vanilla faction it fights alongside, or null for none
+    TracksWipe = true,        // false for a "team" that's really one role, so its death isn't a wipe
+};
 
 CustomTeams.Register(team);   // in OnEnabled
 CustomTeams.Unregister(team); // in OnDisabled
 ```
 
-- The membership check runs while a player is dying, before their role changes, so it can still see them as a member. Exceptions it throws are logged and treated as "not a member".
-- Available from v1.5.0. To make RoundMoments optional, reference `RoundMoments.dll` without copying it, put every call to `RoundMoments.API` in one class of its own, and only call that class when `Exiled.Loader.Loader.Plugins` contains RoundMoments v1.5.0 or later. A plugin that requires RoundMoments can call the API directly.
+- The membership check runs while a player is dying, before their role changes, so it can still see them as a member, and for a killer still on the life they killed with. Exceptions it throws are logged and treated as "not a member".
+- Available from v1.5.0; `Color`, `Allies` and `TracksWipe` from v1.6.0. To make RoundMoments optional, reference `RoundMoments.dll` without copying it, put every call to `RoundMoments.API` in one class of its own, and only call that class when `Exiled.Loader.Loader.Plugins` contains a new enough RoundMoments. A plugin that requires RoundMoments can call the API directly.

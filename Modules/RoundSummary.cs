@@ -9,21 +9,19 @@
     using MEC;
     using PlayerRoles;
     using PlayerStatsSystem;
+    using RoundMoments.API;
 
-    /// <summary>
-    /// Tracks survival time, nemesis pairings, and damage-without-a-kill, reporting all three in one broadcast at round end.
-    /// </summary>
     public static class RoundSummary
     {
         private static readonly Dictionary<int, DateTime> LifeStartTimes = new();
         private static readonly Dictionary<(int, int), int> KillPairs = new();
         private static readonly Dictionary<int, float> DamageDealt = new();
         private static readonly Dictionary<int, bool> HasKilled = new();
-        private static readonly Dictionary<int, RoleTypeId> LastAttackRoles = new();
+        private static readonly Dictionary<int, string> LastAttackColors = new();
 
-        private static (string Name, RoleTypeId Role)? bestSurvivor;
+        private static (string Name, string Color)? bestSurvivor;
         private static TimeSpan bestSurvivalTime;
-        private static (string Name, RoleTypeId Role)? firstBlood;
+        private static (string Name, string Color)? firstBlood;
 
         private static Config Config => Plugin.Instance!.Config;
         private static Translation Translation => Plugin.Instance!.Translation;
@@ -60,7 +58,7 @@
             KillPairs.Clear();
             DamageDealt.Clear();
             HasKilled.Clear();
-            LastAttackRoles.Clear();
+            LastAttackColors.Clear();
             bestSurvivor = null;
             bestSurvivalTime = TimeSpan.Zero;
             firstBlood = null;
@@ -90,27 +88,27 @@
             LifeStartTimes.Remove(id);
             DamageDealt.Remove(id);
             HasKilled.Remove(id);
-            LastAttackRoles.Remove(id);
+            LastAttackColors.Remove(id);
 
             foreach ((int, int) key in KillPairs.Keys.Where(k => k.Item1 == id || k.Item2 == id).ToList())
                 KillPairs.Remove(key);
         }
 
-        // Hurt, not Hurting: it fires once the damage has landed, after armor and after other plugins had their chance
-        // to block it, so only damage that was really dealt counts.
+        // Hurt, not Hurting: only damage that really landed, after armour and other plugins.
         private static void OnPlayerHurt(HurtEventArgs ev)
         {
             if (ev.Attacker is null || ev.Player is null || ev.Attacker == ev.Player || ev.DamageHandler.Base is not StandardDamageHandler handler)
                 return;
 
             RoleTypeId attackerRole = KillCredit.GetAttackerRole(ev.DamageHandler, ev.Attacker);
-            if (!HitboxIdentity.IsEnemy(attackerRole, ev.Player.Role.Type))
+            CustomTeam? attackerTeam = KillCredit.GetAttackerTeam(ev.DamageHandler, ev.Attacker);
+            if (!CustomTeams.AreEnemies(attackerRole, attackerTeam, ev.Player.Role.Type, CustomTeams.Get(ev.Player)))
                 return;
 
             int attackerId = ev.Attacker.Id;
             DamageDealt.TryGetValue(attackerId, out float currentDamage);
             DamageDealt[attackerId] = currentDamage + handler.TotalDamageDealt;
-            LastAttackRoles[attackerId] = attackerRole;
+            LastAttackColors[attackerId] = PlayerColor.Get(attackerRole, attackerTeam);
         }
 
         private static void OnPlayerDied(DiedEventArgs ev)
@@ -124,21 +122,22 @@
             {
                 TimeSpan survived = DateTime.Now - lifeStart;
                 LifeStartTimes.Remove(victimId);
-                RecordSurvival(ev.Player.Nickname, ev.TargetOldRole, survived);
+                RecordSurvival(ev.Player.Nickname, PlayerColor.Get(ev.TargetOldRole, KillCredit.GetVictimTeam(ev.Player)), survived);
 
                 if (Config.Debug)
                     Log.Debug($"{ev.Player.Nickname} (id={victimId}) died after surviving {(int)survived.TotalMinutes}m {survived.Seconds}s.");
             }
 
             Player? killer = KillCredit.GetKiller(ev, out RoleTypeId killerRole);
-            if (killer is null || !HitboxIdentity.IsEnemy(killerRole, ev.TargetOldRole))
+            if (killer is null || !KillCredit.IsEnemyKill(ev, killer, killerRole, out CustomTeam? killerTeam, out _))
                 return;
 
             int killerId = killer.Id;
-            firstBlood ??= (killer.Nickname, killerRole);
+            string killerColor = PlayerColor.Get(killerRole, killerTeam);
+            firstBlood ??= (killer.Nickname, killerColor);
 
             HasKilled[killerId] = true;
-            LastAttackRoles[killerId] = killerRole;
+            LastAttackColors[killerId] = killerColor;
 
             (int, int) pairKey = killerId < victimId ? (killerId, victimId) : (victimId, killerId);
 
@@ -151,19 +150,19 @@
             foreach (Player player in Player.List.Where(p => p.IsAlive))
             {
                 if (LifeStartTimes.TryGetValue(player.Id, out DateTime lifeStart))
-                    RecordSurvival(player.Nickname, player.Role.Type, DateTime.Now - lifeStart);
+                    RecordSurvival(player.Nickname, PlayerColor.Get(player.Role.Type, CustomTeams.Get(player)), DateTime.Now - lifeStart);
             }
 
             string text = string.Empty;
 
             if (firstBlood is { } killer)
-                text += string.Format(Translation.FirstBloodLine, PlayerColor.GetColoredName(killer.Name, killer.Role)) + "\n";
+                text += string.Format(Translation.FirstBloodLine, PlayerColor.GetColoredName(killer.Name, killer.Color)) + "\n";
 
             if (TeamWipe.FirstWipeTeamName is string firstWipeTeamName)
                 text += string.Format(Translation.FirstTeamWipeLine, firstWipeTeamName) + "\n";
 
             if (bestSurvivor is { } survivor)
-                text += string.Format(Translation.LongestSurvivalLine, PlayerColor.GetColoredName(survivor.Name, survivor.Role), (int)bestSurvivalTime.TotalMinutes, bestSurvivalTime.Seconds) + "\n";
+                text += string.Format(Translation.LongestSurvivalLine, PlayerColor.GetColoredName(survivor.Name, survivor.Color), (int)bestSurvivalTime.TotalMinutes, bestSurvivalTime.Seconds) + "\n";
 
             KeyValuePair<(int, int), int> topPair = KillPairs.OrderByDescending(kv => kv.Value).FirstOrDefault();
             if (topPair.Value >= 2)
@@ -195,16 +194,16 @@
             }
         }
 
-        private static void RecordSurvival(string name, RoleTypeId role, TimeSpan survived)
+        private static void RecordSurvival(string name, string color, TimeSpan survived)
         {
             if (survived <= bestSurvivalTime)
                 return;
 
             bestSurvivalTime = survived;
-            bestSurvivor = (name, role);
+            bestSurvivor = (name, color);
         }
 
-        // Colored by the role they last fought as, since most players are spectators by the time the round ends.
-        private static string GetAttackerName(Player player) => PlayerColor.GetColoredName(player.Nickname, LastAttackRoles.TryGetValue(player.Id, out RoleTypeId role) ? role : player.Role.Type);
+        // Colored by what they last fought as, since most players are spectators by the time the round ends.
+        private static string GetAttackerName(Player player) => PlayerColor.GetColoredName(player.Nickname, LastAttackColors.TryGetValue(player.Id, out string? color) ? color : PlayerColor.Get(player.Role.Type, CustomTeams.Get(player)));
     }
 }

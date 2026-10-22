@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using Exiled.API.Features;
+    using PlayerRoles;
 
     /// <summary>
     /// Lets other plugins register their own teams with RoundMoments.
@@ -46,6 +47,20 @@
             }
 
             return null;
+        }
+
+        // Custom teams decide first; without one on either side, it's the game's own rule.
+        internal static bool AreEnemies(RoleTypeId attackerRole, CustomTeam? attackerTeam, RoleTypeId victimRole, CustomTeam? victimTeam)
+        {
+            if (attackerTeam is null && victimTeam is null)
+                return HitboxIdentity.IsEnemy(attackerRole, victimRole);
+
+            if (attackerTeam == victimTeam)
+                return false;
+
+            Faction? attackerSide = attackerTeam is null ? attackerRole.GetFaction() : attackerTeam.Allies;
+            Faction? victimSide = victimTeam is null ? victimRole.GetFaction() : victimTeam.Allies;
+            return attackerSide is null || attackerSide != victimSide;
         }
 
         // Another plugin's membership check failing mustn't break RoundMoments' own handlers.
