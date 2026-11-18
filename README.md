@@ -18,7 +18,7 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 - **Revenge kills** - a hint when a player kills the specific person who killed them last.
 - **Comeback/underdog kills** - a hint when a player gets a kill while at critically low health.
 - **Team wipes** - a CASSIE announcement, alarm and all, when an entire team (SCPs, Class-D, Scientists, Chaos Insurgency, or Foundation Forces) is fully eliminated by death - an escaping player recruited into another team doesn't count as a wipe. Scientists can be left out with `team_wipe_include_scientists`.
-- **Round-end summary** - a single broadcast, shown shortly after the round ends, covering the round's first blood, the first team wiped out, the longest-surviving human, the biggest "nemesis" pairing (two players who killed each other at least twice), and whoever dealt the most damage without ever landing a kill.
+- **Round-end summary** - a single broadcast, shown shortly after the round ends, covering the round's first blood, the first SCP killed, the first team wiped out, the first escape, the longest-surviving human, the top human and SCP killers, the biggest "nemesis" pairing (two players who killed each other at least twice), whoever dealt the most damage to SCPs, and whoever dealt the most damage without ever landing a kill. Any line can be turned off by leaving its translation empty.
 - **Colored names** - every player name shown by this plugin uses the color of the role they had at that moment (the role they killed or died as), not whatever they are when the message appears.
 - **Auto-update** - checks this plugin's own GitHub repo for a newer release, and if found, downloads and applies it automatically, restarting the server once the current round ends.
 
@@ -69,8 +69,8 @@ team_wipe_enabled: true
 team_wipe_include_scientists: true
 # How long, in seconds, the round-end summary broadcast stays visible.
 round_summary_duration: 10
-# How long, in seconds, to wait after the round ends before showing the round-end summary. The delay keeps other round-end broadcasts from clearing it.
-round_summary_delay_seconds: 6
+# How long, in seconds, to wait after the round ends before showing the round-end summary. Raise it if another plugin's round-end broadcast clears the summary.
+round_summary_delay_seconds: 1
 # The round-end summary broadcast's text size, as a percentage of the default size.
 round_summary_text_size_percent: 65
 # Whether to check for and automatically install updates.

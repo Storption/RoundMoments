@@ -8,8 +8,23 @@
         [Description("The hint shown to a player when they reach a kill streak. {0} is the streak count.")]
         public string KillStreakHint { get; set; } = "<color=#FFA500>You're on a {0}-kill streak!</color>";
 
-        [Description("The line in the round-end summary naming who drew first blood. {0} is the player's name.")]
+        [Description("The line in the round-end summary naming who drew first blood. {0} is the player's name. Leave any summary line empty to leave it out.")]
         public string FirstBloodLine { get; set; } = "<color=#FF0000>First blood:</color> {0}";
+
+        [Description("The line in the round-end summary naming who killed an SCP first (SCP-049-2s don't count). {0} is the player's name.")]
+        public string FirstScpKillLine { get; set; } = "<color=#FF0000>First SCP down:</color> {0}";
+
+        [Description("The line in the round-end summary naming who escaped first. {0} is the player's name, {1} is minutes into the round, {2} is seconds.")]
+        public string FirstEscapeLine { get; set; } = "<color=#00FF00>First escape:</color> {0} <color=yellow>({1}m {2}s)</color>";
+
+        [Description("The line in the round-end summary naming who killed the most enemies as a human. {0} is the player's name, {1} is the kill count.")]
+        public string MostHumanKillsLine { get; set; } = "<color=#00FF00>Top human killer:</color> {0} <color=yellow>({1} kills)</color>";
+
+        [Description("The line in the round-end summary naming who killed the most as an SCP. {0} is the player's name, {1} is the kill count.")]
+        public string MostScpKillsLine { get; set; } = "<color=#FF0000>Top SCP killer:</color> {0} <color=yellow>({1} kills)</color>";
+
+        [Description("The line in the round-end summary naming who dealt the most damage to SCPs. {0} is the player's name, {1} is the damage amount.")]
+        public string MostScpDamageLine { get; set; } = "<color=#00FFFF>Most damage to SCPs:</color> {0} <color=yellow>({1})</color>";
 
         [Description("The line in the round-end summary naming which team was wiped out first. {0} is the team name.")]
         public string FirstTeamWipeLine { get; set; } = "<color=#FF0000>First team wiped out:</color> <color=yellow>{0}</color>";

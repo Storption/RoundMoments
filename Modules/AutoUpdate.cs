@@ -102,6 +102,12 @@
                 return;
             }
 
+            if (string.Equals(GetInstalledSha256(), latestRelease.Value.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Warn($"[AutoUpdate] The v{latestVersion} release's .dll is already installed, but the loaded plugin reports v{currentVersion}. Restart the server if it hasn't restarted since the update; otherwise the release was built before its version was bumped and needs re-uploading.");
+                return;
+            }
+
             Log.Info($"[AutoUpdate] Newer release found - v{currentVersion} -> v{latestVersion}. Downloading...");
 
             if (Interlocked.CompareExchange(ref downloadingFlag, 1, 0) != 0)
@@ -111,9 +117,7 @@
             {
                 byte[] newDllBytes = await client.GetByteArrayAsync(latestRelease.Value.DownloadUrl);
 
-                using SHA256 sha256 = SHA256.Create();
-                string actualHash = BitConverter.ToString(sha256.ComputeHash(newDllBytes)).Replace("-", string.Empty);
-                if (!string.Equals(actualHash, latestRelease.Value.Sha256, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(ComputeSha256(newDllBytes), latestRelease.Value.Sha256, StringComparison.OrdinalIgnoreCase))
                 {
                     Log.Error("[AutoUpdate] The downloaded file failed its SHA-256 check - update aborted.");
                     return;
@@ -217,6 +221,25 @@
         {
             string cleaned = tag.TrimStart('v', 'V');
             return Version.TryParse(cleaned, out version);
+        }
+
+        // Null when the file can't be read, so the update still goes ahead.
+        private static string? GetInstalledSha256()
+        {
+            try
+            {
+                return File.Exists(CurrentDllPath) ? ComputeSha256(File.ReadAllBytes(CurrentDllPath)) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static string ComputeSha256(byte[] bytes)
+        {
+            using SHA256 sha256 = SHA256.Create();
+            return BitConverter.ToString(sha256.ComputeHash(bytes)).Replace("-", string.Empty);
         }
     }
 }

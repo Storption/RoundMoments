@@ -53,8 +53,8 @@
         [Description("How long, in seconds, the round-end summary broadcast stays visible.")]
         public int RoundSummaryDuration { get; set; } = 10;
 
-        [Description("How long, in seconds, to wait after the round ends before showing the round-end summary. The delay keeps other round-end broadcasts from clearing it.")]
-        public int RoundSummaryDelaySeconds { get; set; } = 6;
+        [Description("How long, in seconds, to wait after the round ends before showing the round-end summary. Raise it if another plugin's round-end broadcast clears the summary.")]
+        public int RoundSummaryDelaySeconds { get; set; } = 1;
 
         [Description("The round-end summary broadcast's text size, as a percentage of the default size.")]
         public int RoundSummaryTextSizePercent { get; set; } = 65;
@@ -63,7 +63,7 @@
         public bool AutoUpdateEnabled { get; set; } = true;
 
         [Description("Whether to keep a backup of the previous .dll before replacing it with an update.")]
-        public bool AutoUpdateBackup { get; set; } = true;
+        public bool AutoUpdateBackup { get; set; } = false;
 
         [Description("Whether to automatically restart the server once the current round ends, to apply a downloaded update. Never restarts mid-round.")]
         public bool AutoUpdateRestart { get; set; } = true;

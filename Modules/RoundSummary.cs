@@ -18,10 +18,15 @@
         private static readonly Dictionary<int, float> DamageDealt = new();
         private static readonly Dictionary<int, bool> HasKilled = new();
         private static readonly Dictionary<int, string> LastAttackColors = new();
+        private static readonly Dictionary<int, Score> HumanKills = new();
+        private static readonly Dictionary<int, Score> ScpKills = new();
+        private static readonly Dictionary<int, Score> DamageToScps = new();
 
         private static (string Name, string Color)? bestSurvivor;
         private static TimeSpan bestSurvivalTime;
         private static (string Name, string Color)? firstBlood;
+        private static (string Name, string Color)? firstScpKill;
+        private static (string Name, string Color, TimeSpan Time)? firstEscape;
 
         private static Config Config => Plugin.Instance!.Config;
         private static Translation Translation => Plugin.Instance!.Translation;
@@ -34,6 +39,7 @@
             Exiled.Events.Handlers.Player.Left += OnLeft;
             Exiled.Events.Handlers.Player.Died += OnPlayerDied;
             Exiled.Events.Handlers.Player.Hurt += OnPlayerHurt;
+            Exiled.Events.Handlers.Player.Escaped += OnEscaped;
             Exiled.Events.Handlers.Server.RoundEnded += OnRoundEnded;
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
         }
@@ -44,6 +50,7 @@
             Exiled.Events.Handlers.Player.Left -= OnLeft;
             Exiled.Events.Handlers.Player.Died -= OnPlayerDied;
             Exiled.Events.Handlers.Player.Hurt -= OnPlayerHurt;
+            Exiled.Events.Handlers.Player.Escaped -= OnEscaped;
             Exiled.Events.Handlers.Server.RoundEnded -= OnRoundEnded;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
 
@@ -59,9 +66,14 @@
             DamageDealt.Clear();
             HasKilled.Clear();
             LastAttackColors.Clear();
+            HumanKills.Clear();
+            ScpKills.Clear();
+            DamageToScps.Clear();
             bestSurvivor = null;
             bestSurvivalTime = TimeSpan.Zero;
             firstBlood = null;
+            firstScpKill = null;
+            firstEscape = null;
         }
 
         private static void OnSpawned(SpawnedEventArgs ev)
@@ -89,6 +101,9 @@
             DamageDealt.Remove(id);
             HasKilled.Remove(id);
             LastAttackColors.Remove(id);
+            HumanKills.Remove(id);
+            ScpKills.Remove(id);
+            DamageToScps.Remove(id);
 
             foreach ((int, int) key in KillPairs.Keys.Where(k => k.Item1 == id || k.Item2 == id).ToList())
                 KillPairs.Remove(key);
@@ -106,9 +121,13 @@
                 return;
 
             int attackerId = ev.Attacker.Id;
+            string attackerColor = PlayerColor.Get(attackerRole, attackerTeam);
             DamageDealt.TryGetValue(attackerId, out float currentDamage);
             DamageDealt[attackerId] = currentDamage + handler.TotalDamageDealt;
-            LastAttackColors[attackerId] = PlayerColor.Get(attackerRole, attackerTeam);
+            LastAttackColors[attackerId] = attackerColor;
+
+            if (ev.Player.Role.Team == Team.SCPs && attackerRole.GetTeam() != Team.SCPs)
+                Add(DamageToScps, ev.Attacker, attackerColor, handler.TotalDamageDealt);
         }
 
         private static void OnPlayerDied(DiedEventArgs ev)
@@ -135,6 +154,11 @@
             int killerId = killer.Id;
             string killerColor = PlayerColor.Get(killerRole, killerTeam);
             firstBlood ??= (killer.Nickname, killerColor);
+            Add(killerRole.GetTeam() == Team.SCPs ? ScpKills : HumanKills, killer, killerColor, 1f);
+
+            // SCP-049-2s die easily and often, so the first SCP kill is a real one.
+            if (firstScpKill is null && ev.TargetOldRole.GetTeam() == Team.SCPs && ev.TargetOldRole != RoleTypeId.Scp0492)
+                firstScpKill = (killer.Nickname, killerColor);
 
             HasKilled[killerId] = true;
             LastAttackColors[killerId] = killerColor;
@@ -143,6 +167,13 @@
 
             KillPairs.TryGetValue(pairKey, out int currentPairKills);
             KillPairs[pairKey] = currentPairKills + 1;
+        }
+
+        // EscapedEventArgs.EscapeTime is the time in the old role, not in the round.
+        private static void OnEscaped(EscapedEventArgs ev)
+        {
+            if (ev.Player is not null)
+                firstEscape ??= (ev.Player.Nickname, PlayerColor.Get(ev.OldRole.Type, null), Round.ElapsedTime);
         }
 
         private static void OnRoundEnded(RoundEndedEventArgs ev)
@@ -156,13 +187,25 @@
             string text = string.Empty;
 
             if (firstBlood is { } killer)
-                text += string.Format(Translation.FirstBloodLine, PlayerColor.GetColoredName(killer.Name, killer.Color)) + "\n";
+                text += Line(Translation.FirstBloodLine, PlayerColor.GetColoredName(killer.Name, killer.Color));
+
+            if (firstScpKill is { } scpKiller)
+                text += Line(Translation.FirstScpKillLine, PlayerColor.GetColoredName(scpKiller.Name, scpKiller.Color));
 
             if (TeamWipe.FirstWipeTeamName is string firstWipeTeamName)
-                text += string.Format(Translation.FirstTeamWipeLine, firstWipeTeamName) + "\n";
+                text += Line(Translation.FirstTeamWipeLine, firstWipeTeamName);
+
+            if (firstEscape is { } escapee)
+                text += Line(Translation.FirstEscapeLine, PlayerColor.GetColoredName(escapee.Name, escapee.Color), (int)escapee.Time.TotalMinutes, escapee.Time.Seconds);
 
             if (bestSurvivor is { } survivor)
-                text += string.Format(Translation.LongestSurvivalLine, PlayerColor.GetColoredName(survivor.Name, survivor.Color), (int)bestSurvivalTime.TotalMinutes, bestSurvivalTime.Seconds) + "\n";
+                text += Line(Translation.LongestSurvivalLine, PlayerColor.GetColoredName(survivor.Name, survivor.Color), (int)bestSurvivalTime.TotalMinutes, bestSurvivalTime.Seconds);
+
+            if (Best(HumanKills) is { } humanKiller)
+                text += Line(Translation.MostHumanKillsLine, PlayerColor.GetColoredName(humanKiller.Name, humanKiller.Color), (int)humanKiller.Value);
+
+            if (Best(ScpKills) is { } scpTopKiller)
+                text += Line(Translation.MostScpKillsLine, PlayerColor.GetColoredName(scpTopKiller.Name, scpTopKiller.Color), (int)scpTopKiller.Value);
 
             KeyValuePair<(int, int), int> topPair = KillPairs.OrderByDescending(kv => kv.Value).FirstOrDefault();
             if (topPair.Value >= 2)
@@ -170,8 +213,11 @@
                 Player? nemesisPlayer1 = Player.Get(topPair.Key.Item1);
                 Player? nemesisPlayer2 = Player.Get(topPair.Key.Item2);
                 if (nemesisPlayer1 is not null && nemesisPlayer2 is not null)
-                    text += string.Format(Translation.NemesisLine, GetAttackerName(nemesisPlayer1), GetAttackerName(nemesisPlayer2), topPair.Value) + "\n";
+                    text += Line(Translation.NemesisLine, GetAttackerName(nemesisPlayer1), GetAttackerName(nemesisPlayer2), topPair.Value);
             }
+
+            if (Best(DamageToScps) is { } scpDamage)
+                text += Line(Translation.MostScpDamageLine, PlayerColor.GetColoredName(scpDamage.Name, scpDamage.Color), (int)scpDamage.Value);
 
             KeyValuePair<int, float> topDamageNoKill = DamageDealt
                 .Where(kv => !HasKilled.ContainsKey(kv.Key))
@@ -180,7 +226,7 @@
 
             Player? topDamageNoKillPlayer = topDamageNoKill.Value > 0 ? Player.Get(topDamageNoKill.Key) : null;
             if (topDamageNoKillPlayer is not null)
-                text += string.Format(Translation.MostDamageWithoutKillLine, GetAttackerName(topDamageNoKillPlayer), (int)topDamageNoKill.Value) + "\n";
+                text += Line(Translation.MostDamageWithoutKillLine, GetAttackerName(topDamageNoKillPlayer), (int)topDamageNoKill.Value);
 
             if (Config.Debug)
                 Log.Debug($"Round summary: survivor={bestSurvivor?.Name ?? "none"} ({(int)bestSurvivalTime.TotalMinutes}m {bestSurvivalTime.Seconds}s), nemesis pair kills={topPair.Value}, top damage-no-kill={topDamageNoKill.Value}.");
@@ -194,6 +240,31 @@
             }
         }
 
+        private static string Line(string format, params object[] args) => string.IsNullOrEmpty(format) ? string.Empty : string.Format(format, args) + "\n";
+
+        // Named as they were when they scored, so a player who left or changed role still reads right.
+        private static void Add(Dictionary<int, Score> scores, Player player, string color, float value)
+        {
+            if (!scores.TryGetValue(player.Id, out Score score))
+                scores[player.Id] = score = new Score();
+
+            score.Value += value;
+            score.Name = player.Nickname;
+            score.Color = color;
+        }
+
+        private static Score? Best(Dictionary<int, Score> scores)
+        {
+            Score? best = null;
+            foreach (Score score in scores.Values)
+            {
+                if (score.Value >= 1f && (best is null || score.Value > best.Value))
+                    best = score;
+            }
+
+            return best;
+        }
+
         private static void RecordSurvival(string name, string color, TimeSpan survived)
         {
             if (survived <= bestSurvivalTime)
@@ -205,5 +276,14 @@
 
         // Colored by what they last fought as, since most players are spectators by the time the round ends.
         private static string GetAttackerName(Player player) => PlayerColor.GetColoredName(player.Nickname, LastAttackColors.TryGetValue(player.Id, out string? color) ? color : PlayerColor.Get(player.Role.Type, CustomTeams.Get(player)));
+
+        private sealed class Score
+        {
+            public float Value { get; set; }
+
+            public string Name { get; set; } = string.Empty;
+
+            public string Color { get; set; } = string.Empty;
+        }
     }
 }
