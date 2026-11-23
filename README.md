@@ -76,7 +76,7 @@ round_summary_text_size_percent: 65
 # Whether to check for and automatically install updates.
 auto_update_enabled: true
 # Whether to keep a backup of the previous .dll before replacing it with an update.
-auto_update_backup: true
+auto_update_backup: false
 # Whether to automatically restart the server once the current round ends, to apply a downloaded update. Never restarts mid-round.
 auto_update_restart: true
 ```
