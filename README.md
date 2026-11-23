@@ -18,7 +18,7 @@ An [EXILED](https://github.com/ExMod-Team/EXILED) plugin for SCP: Secret Laborat
 - **Revenge kills** - a hint when a player kills the specific person who killed them last.
 - **Comeback/underdog kills** - a hint when a player gets a kill while at critically low health.
 - **Team wipes** - a CASSIE announcement, alarm and all, when an entire team (SCPs, Class-D, Scientists, Chaos Insurgency, or Foundation Forces) is fully eliminated by death - an escaping player recruited into another team doesn't count as a wipe. Scientists can be left out with `team_wipe_include_scientists`.
-- **Round-end summary** - a single broadcast, shown shortly after the round ends, covering the round's first blood, the first SCP killed, the first team wiped out, the first escape, the longest-surviving human, the top human and SCP killers, the biggest "nemesis" pairing (two players who killed each other at least twice), whoever dealt the most damage to SCPs, and whoever dealt the most damage without ever landing a kill. Any line can be turned off by leaving its translation empty.
+- **Round-end summary** - a single broadcast, shown shortly after the round ends, covering the round's first blood, the first SCP killed, the first team wiped out, the first escape, the longest-surviving human, the top human and SCP killers, the biggest "nemesis" pairing (two players who killed each other at least twice), whoever dealt the most damage to SCPs, whoever dealt the most damage to humans, and whoever dealt the most damage without ever landing a kill. Any line can be turned off by leaving its translation empty.
 - **Colored names** - every player name shown by this plugin uses the color of the role they had at that moment (the role they killed or died as), not whatever they are when the message appears.
 - **Auto-update** - checks this plugin's own GitHub repo for a newer release, and if found, downloads and applies it automatically, restarting the server once the current round ends.
 
@@ -106,6 +106,7 @@ CustomTeam team = new(
     Color = "#FF96DE",        // members' names, or null for their role's color
     Allies = Faction.SCP,     // the vanilla faction it fights alongside, or null for none
     TracksWipe = true,        // false for a "team" that's really one role, so its death isn't a wipe
+    TracksSurvival = true,    // false for SCPs on a human role, so they can't be the longest survivor
 };
 
 CustomTeams.Register(team);   // in OnEnabled
@@ -113,4 +114,4 @@ CustomTeams.Unregister(team); // in OnDisabled
 ```
 
 - The membership check runs while a player is dying, before their role changes, so it can still see them as a member, and for a killer still on the life they killed with. Exceptions it throws are logged and treated as "not a member".
-- Available from v1.5.0; `Color`, `Allies` and `TracksWipe` from v1.6.0. To make RoundMoments optional, reference `RoundMoments.dll` without copying it, put every call to `RoundMoments.API` in one class of its own, and only call that class when `Exiled.Loader.Loader.Plugins` contains a new enough RoundMoments. A plugin that requires RoundMoments can call the API directly.
+- Available from v1.5.0; `Color`, `Allies` and `TracksWipe` from v1.6.0, `TracksSurvival` from v1.8.0. To make RoundMoments optional, reference `RoundMoments.dll` without copying it, put every call to `RoundMoments.API` in one class of its own, and only call that class when `Exiled.Loader.Loader.Plugins` contains a new enough RoundMoments. A plugin that requires RoundMoments can call the API directly.

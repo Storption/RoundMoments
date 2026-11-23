@@ -21,6 +21,7 @@
         private static readonly Dictionary<int, Score> HumanKills = new();
         private static readonly Dictionary<int, Score> ScpKills = new();
         private static readonly Dictionary<int, Score> DamageToScps = new();
+        private static readonly Dictionary<int, Score> DamageToHumans = new();
 
         private static (string Name, string Color)? bestSurvivor;
         private static TimeSpan bestSurvivalTime;
@@ -69,6 +70,7 @@
             HumanKills.Clear();
             ScpKills.Clear();
             DamageToScps.Clear();
+            DamageToHumans.Clear();
             bestSurvivor = null;
             bestSurvivalTime = TimeSpan.Zero;
             firstBlood = null;
@@ -104,6 +106,7 @@
             HumanKills.Remove(id);
             ScpKills.Remove(id);
             DamageToScps.Remove(id);
+            DamageToHumans.Remove(id);
 
             foreach ((int, int) key in KillPairs.Keys.Where(k => k.Item1 == id || k.Item2 == id).ToList())
                 KillPairs.Remove(key);
@@ -128,6 +131,8 @@
 
             if (ev.Player.Role.Team == Team.SCPs && attackerRole.GetTeam() != Team.SCPs)
                 Add(DamageToScps, ev.Attacker, attackerColor, handler.TotalDamageDealt);
+            else if (ev.Player.Role.Team != Team.SCPs)
+                Add(DamageToHumans, ev.Attacker, attackerColor, handler.TotalDamageDealt);
         }
 
         private static void OnPlayerDied(DiedEventArgs ev)
@@ -141,7 +146,9 @@
             {
                 TimeSpan survived = DateTime.Now - lifeStart;
                 LifeStartTimes.Remove(victimId);
-                RecordSurvival(ev.Player.Nickname, PlayerColor.Get(ev.TargetOldRole, KillCredit.GetVictimTeam(ev.Player)), survived);
+                CustomTeam? victimTeam = KillCredit.GetVictimTeam(ev.Player);
+                if (victimTeam is not { TracksSurvival: false })
+                    RecordSurvival(ev.Player.Nickname, PlayerColor.Get(ev.TargetOldRole, victimTeam), survived);
 
                 if (Config.Debug)
                     Log.Debug($"{ev.Player.Nickname} (id={victimId}) died after surviving {(int)survived.TotalMinutes}m {survived.Seconds}s.");
@@ -180,8 +187,9 @@
         {
             foreach (Player player in Player.List.Where(p => p.IsAlive))
             {
-                if (LifeStartTimes.TryGetValue(player.Id, out DateTime lifeStart))
-                    RecordSurvival(player.Nickname, PlayerColor.Get(player.Role.Type, CustomTeams.Get(player)), DateTime.Now - lifeStart);
+                CustomTeam? team = CustomTeams.Get(player);
+                if (LifeStartTimes.TryGetValue(player.Id, out DateTime lifeStart) && team is not { TracksSurvival: false })
+                    RecordSurvival(player.Nickname, PlayerColor.Get(player.Role.Type, team), DateTime.Now - lifeStart);
             }
 
             string text = string.Empty;
@@ -218,6 +226,9 @@
 
             if (Best(DamageToScps) is { } scpDamage)
                 text += Line(Translation.MostScpDamageLine, PlayerColor.GetColoredName(scpDamage.Name, scpDamage.Color), (int)scpDamage.Value);
+
+            if (Best(DamageToHumans) is { } humanDamage)
+                text += Line(Translation.MostHumanDamageLine, PlayerColor.GetColoredName(humanDamage.Name, humanDamage.Color), (int)humanDamage.Value);
 
             KeyValuePair<int, float> topDamageNoKill = DamageDealt
                 .Where(kv => !HasKilled.ContainsKey(kv.Key))

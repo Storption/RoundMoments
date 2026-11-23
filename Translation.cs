@@ -26,6 +26,9 @@
         [Description("The line in the round-end summary naming who dealt the most damage to SCPs. {0} is the player's name, {1} is the damage amount.")]
         public string MostScpDamageLine { get; set; } = "<color=#00FFFF>Most damage to SCPs:</color> {0} <color=yellow>({1})</color>";
 
+        [Description("The line in the round-end summary naming who dealt the most damage to humans, as an SCP or a human. {0} is the player's name, {1} is the damage amount.")]
+        public string MostHumanDamageLine { get; set; } = "<color=#FFA500>Most damage to humans:</color> {0} <color=yellow>({1})</color>";
+
         [Description("The line in the round-end summary naming which team was wiped out first. {0} is the team name.")]
         public string FirstTeamWipeLine { get; set; } = "<color=#FF0000>First team wiped out:</color> <color=yellow>{0}</color>";
 

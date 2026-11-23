@@ -61,5 +61,11 @@
         /// first team wiped. Turn it off for a team that's really a single role.
         /// </summary>
         public bool TracksWipe { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether members can be the round summary's longest survivor. Turn it off for SCPs
+        /// played on a human role, which tend to live the whole round like any SCP.
+        /// </summary>
+        public bool TracksSurvival { get; set; } = true;
     }
 }
